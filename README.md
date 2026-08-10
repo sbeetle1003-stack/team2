@@ -1,7 +1,8 @@
 # team2
 - README.md 공지
  - READMD.md 매일 11:40, 16:30 종합 후 작성
- - 주요 작업만 작성 예정, 추가 작성이 필요한 경우 개인 git READMD에 작성 후 팀장에게 얘기하면 확인하여 추가 작성할 계획.
+ - 주요 작업만 작성 예정, 추가 작성이 필요한 경우 README에 작성 후 팀장에게 얘기하면 확인하여 추가 작성할 계획.
+ - 다른 좋은 의견이 있다면 언제든지 말씀해주세요.
 
 - team2 역할 분담
 - 권신용:
@@ -18,6 +19,7 @@
   - 프로젝트 주제 구상 및 회의
 - 곽정미
   - 프로젝트 주제 구상 및 회의
+  - 계획서 작성
   https://docs.google.com/document/d/1Da4qCqeY5nMt9YkbcyU7bKz6OxcQ_4JnLeU_khmT6Bo/edit?usp=sharing
 - 이명연
   - 프로젝트 주제 구상 및 회의
