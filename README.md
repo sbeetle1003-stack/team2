@@ -18,6 +18,7 @@
   - 프로젝트 주제 구상 및 회의
 - 곽정미
   - 프로젝트 주제 구상 및 회의
+  https://docs.google.com/document/d/1Da4qCqeY5nMt9YkbcyU7bKz6OxcQ_4JnLeU_khmT6Bo/edit?usp=sharing
 - 이명연
   - 프로젝트 주제 구상 및 회의
 - 주영찬
