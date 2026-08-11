@@ -85,19 +85,19 @@
 - 주영찬
   - 3by3 tic tac toe manipulator 개발 환경 구축
 - 박미진
-  - 
+  - 시뮬레이션 환경 구축(Gazebo sys 설계)
 
 
 ---
 ## 오후
 - 권신용
-  - 
+  - manipulator와 minimax algorithm 결합 후 시뮬 
 - 곽정미
   - 
 - 이명연
-  - 
+  - 좌표 추정 및 변환
 - 주영찬
-  - 
+  - manipulator 개발
 - 박미진
   - 
 
