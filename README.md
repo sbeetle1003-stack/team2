@@ -97,7 +97,7 @@
 - 이명연
   - 좌표 추정 및 변환
 - 주영찬
-  - manipulator 개발
+  - manipulator 개발(pick & place logic)
 - 박미진
   - 
 
