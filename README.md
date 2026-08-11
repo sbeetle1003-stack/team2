@@ -1,6 +1,6 @@
 # Legacy - Active Vision Project
 
-> [!IMPORTANT]
+> [!CAUTION]
 > This branch contains the previous project topic and is preserved for reference only.
 > Development on this project has been discontinued after the team changed the project topic.
 
