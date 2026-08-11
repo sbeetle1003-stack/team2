@@ -8,7 +8,7 @@
 ## 팀원 이메일 기재 부탁드립니다.
 - 권신용: sbeetle1003@gmail.com
 - 곽정미: utauloid.kk@gmail.com
-- 이명연:
+- 이명연: coolhk03@gmail.com
 - 주영찬:jyber9616@gmail.com
 - 박미진:luckymijin0608@gmail.com
 
