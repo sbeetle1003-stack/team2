@@ -17,7 +17,7 @@
 - 곽정미: utauloid.kk@gmail.com
 - 이명연:
 - 주영찬:
-- 박미진:
+- 박미진:luckymijin0608@gmail.com
 
 
 ## 2026-08-10(1일차)
