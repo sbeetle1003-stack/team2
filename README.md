@@ -1,209 +1,47 @@
-# team2
-- README.md 공지
- - READMD.md 매일 11:40, 16:30 종합 후 작성
- - 주요 작업만 작성 예정, 추가 작성이 필요한 경우 README에 작성 후 팀장에게 얘기하면 확인하여 추가 작성할 계획.
- - 다른 좋은 의견이 있다면 언제든지 말씀해주세요.
+## Branch Structure
+
+현재 프로젝트는 기능별 브랜치에서 개발한 뒤 통합 브랜치에서 연결 및 테스트하는 방식으로 진행
+
+- `main`
+  - 팀 프로젝트의 기준 브랜치
+
+- `feature/board-vision`
+  - 틱택토 게임판 영상 인식 개발 브랜치
+  - 카메라 영상에서 3×3 보드 상태를 인식
+  - `/board_state` 토픽으로 보드 상태 publish
+
+- `feature/integration`
+  - **현재 통합 개발 브랜치**
+  - 개별 기능을 가져와 실제 ROS2 노드 간 연결 및 통합 테스트 진행
+  - 현재 다음 파이프라인까지 연결 및 dry-run 테스트 완료:
+
+    `board_detector → tic_tac_toe_referee → tic_tac_toe_ai → PlacePiece Action → pick_place_controller`
+
+  - 주요 통합 내용:
+    - `board_detector`가 `/board_state` (`std_msgs/msg/Int8MultiArray`) publish
+    - `tic_tac_toe_referee`가 보드 상태 subscribe
+    - 사람의 새로운 수를 감지하면 `tic_tac_toe_ai`를 이용해 다음 수 결정
+    - AI가 결정한 위치를 `cell_id`로 변환
+    - `PlacePiece.action`을 통해 `pick_place_controller`에 배치 요청
+    - `pick_place_controller`의 `dry_run` 모드에서 Pick & Place 전체 sequence 동작 확인
+
+> 새로운 기능의 통합 및 테스트는 `feature/integration`에서 진행하며,
+> 충분히 검증된 이후 `main` 브랜치에 병합
+
 <br>
 
-## 🔗 Project Resources
-
-- 📄 Project Proposal: https://docs.google.com/document/d/1ujhqk1tdocbYJao8EDuLnZ8Bm_JgyH2_NuoS8eUxt3c/edit?usp=sharing
-- 💻 Git Repository: https://github.com/sbeetle1003-stack/team2.git
-- 📊 Presentation: 
-- 🎥 Demo Video:
-<br>
-
-## 팀원 이메일
-- 권신용: sbeetle1003@gmail.com
-- 곽정미: utauloid.kk@gmail.com
-- 이명연: coolhk03@gmail.com
-- 주영찬:jyber9616@gmail.com
-- 박미진:luckymijin0608@gmail.com
-<br>
-
-# 2026-08-10(1일차)
-
 ---
-## 오전
-- 권신용
-  - 프로젝트 주제 구상 및 회의
-- 곽정미
-  - 프로젝트 주제 구상 및 회의
-  - 계획서 작성
-  - 기존 주제(딥러닝과 ROS2 매니퓰레이터를 이용한 토마토 수확 대상의 가림 인지 기반 능동 시각 시스템)
-    https://docs.google.com/document/d/1Da4qCqeY5nMt9YkbcyU7bKz6OxcQ_4JnLeU_khmT6Bo/edit?usp=sharing
-  - 다른 조원분의 아이디어를 활용한 새 주제 구상(ROS2 매니퓰레이터와 Gazebo 디지털 트윈을 이용한 비전 기반 자율 틱택토 시스템)
-    https://docs.google.com/document/d/1ujhqk1tdocbYJao8EDuLnZ8Bm_JgyH2_NuoS8eUxt3c/edit?usp=sharing
-  - 연구 주제의 고도화보다 팀원 모두가 실제로 개발/통합하고 최종 시연까지 완성할 수 있느냐가 관건이지만, 환경 구축이 프로젝트 핵심 기능 개발을 시작하기 위한 선행조건이라면 주제를 변경하는 편이 합리적이라고 생각합니다.
-  - 또한 기존 주제처럼 복잡한 개발 환경을 설치해야만 전체를 실행할 수 있는 구조가 아닌, 각 조원이 하나의 기능 모듈을 책임지고 마지막에 interface만 맞춰 통합할 수 있는 장점이 있습니다. 또한 Gazebo와 실물 개발을 병렬로 진행이 가능합니다.
-- 이명연
-  - 프로젝트 주제 구상 및 회의
-- 주영찬
-  - 프로젝트 주제 구상 및 회의
-- 박미진
-  - 프로젝트 주제 구상 및 회의
+### Current Integration Status
 
-
----
-## 오후
-- 권신용
-  - 프로젝트 주제 구상 및 회의
-- 곽정미
-  - 프로젝트 주제 구상 및 회의
-- 이명연
-  - 프로젝트 주제 구상 및 회의
-- 주영찬
-  - 프로젝트 주제 구상 및 회의
-- 박미진
-  - 프로젝트 주제 구상 및 회의
-
-- 금일 목표과제
-  - 팀 구성과 역할 분담
-  - 구글 슬라이드 팀 정보 수정
-  - 주제 선택
-  - 사후시험
-  - team git Repositories 생성
-  - 계획서 제출
-
-
-
-
-
-# 2026-08-11(2일차)
-### 프로젝트 주제 변경(ROS2 매니퓰레이터와 Gazebo 디지털 트윈을 이용한 비전 기반 자율 틱택토 시스템)
-- 프로젝트 계획서: https://docs.google.com/document/d/1ujhqk1tdocbYJao8EDuLnZ8Bm_JgyH2_NuoS8eUxt3c/edit?usp=sharing
-
----
-## 오전
-- 권신용
-  - Ubuntu -> wsl 코드 최적화 방향성 모색
-- 곽정미
-  - 변경된 주제에 맞춰 계획서 작성, 시스템 구조 설계
-  - 신규 ROS2 Workspace·Git Repository 및 tictactoe_vision 패키지 구축, OpenCV 카메라 및 ArUco Marker 인식 테스트
-- 이명연
-  - 좌표 추정 및 변환 개발
-- 주영찬
-  - 3by3 tic tac toe manipulator 개발 환경 구축
-- 박미진
-  - 
-
-
----
-## 오후
-- 권신용
-  - 
-- 곽정미
-  - 
-- 이명연
-  - 
-- 주영찬
-  - 
-- 박미진
-  - 
-
-- 금일 목표과제
-
-
-
-
-
-## 2026-08-12(3일차)
-
----
-#오전
-- 권신용
-  - 
-- 곽정미
-  - 
-- 이명연
-  - 
-- 주영찬
-  - 
-- 박미진
-  - 
-
-
----
-#오후
-- 권신용
-  - 
-- 곽정미
-  - 
-- 이명연
-  - 
-- 주영찬
-  - 
-- 박미진
-  - 
-
-- 금일 목표과제
-
-
-
-
-## 2026-08-13(4일차)
-
----
-#오전
-- 권신용
-  - 
-- 곽정미
-  - 
-- 이명연
-  - 
-- 주영찬
-  - 
-- 박미진
-  - 
-
-
----
-#오후
-- 권신용
-  - 
-- 곽정미
-  - 
-- 이명연
-  - 
-- 주영찬
-  - 
-- 박미진
-  - 
-
-- 금일 목표과제
-
-
-
-
-## 2026-08-14(5일차)
-
----
-#오전
-- 권신용
-  - 
-- 곽정미
-  - 
-- 이명연
-  - 
-- 주영찬
-  - 
-- 박미진
-  - 
-
-
----
-#오후
-- 권신용
-  - 
-- 곽정미
-  - 
-- 이명연
-  - 
-- 주영찬
-  - 
-- 박미진
-  - 
-
-- 금일 목표과제
-
-
+| Component | Status |
+|---|---|
+| Board detection | ✅ Working |
+| `/board_state` communication | ✅ Working |
+| Referee integration | ✅ Working |
+| Tic-Tac-Toe AI | ✅ Working |
+| `PlacePiece` Action communication | ✅ Working |
+| Pick & Place dry-run | ✅ Working |
+| Gazebo integration | 🚧 In progress |
+| Real manipulator execution | 🚧 Not tested yet |
+| Game reset / undo handling | 🚧 TODO |
+| Game-over logic verification | 🚧 TODO |
