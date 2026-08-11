@@ -20,7 +20,10 @@
 - 곽정미
   - 프로젝트 주제 구상 및 회의
   - 계획서 작성
-  https://docs.google.com/document/d/1Da4qCqeY5nMt9YkbcyU7bKz6OxcQ_4JnLeU_khmT6Bo/edit?usp=sharing
+  - 기존 주제(딥러닝과 ROS2 매니퓰레이터를 이용한 토마토 수확 대상의 가림 인지 기반 능동 시각 시스템)
+    https://docs.google.com/document/d/1Da4qCqeY5nMt9YkbcyU7bKz6OxcQ_4JnLeU_khmT6Bo/edit?usp=sharing
+  - 다른 조원분의 아이디어를 활용한 새 주제 구상(ROS2 매니퓰레이터와 Gazebo 디지털 트윈을 이용한 비전 기반 자율 틱택토 시스템)
+    https://docs.google.com/document/d/1ujhqk1tdocbYJao8EDuLnZ8Bm_JgyH2_NuoS8eUxt3c/edit?usp=sharing
 - 이명연
   - 프로젝트 주제 구상 및 회의
 - 주영찬
