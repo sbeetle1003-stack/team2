@@ -3,6 +3,11 @@
  - READMD.md 매일 11:40, 16:30 종합 후 작성
  - 주요 작업만 작성 예정, 추가 작성이 필요한 경우 README에 작성 후 팀장에게 얘기하면 확인하여 추가 작성할 계획.
  - 다른 좋은 의견이 있다면 언제든지 말씀해주세요.
+
+
+> [!IMPORTANT]
+> 현재 통합 작업 파일은 `feature/integration` 브랜치에 있습니다.
+> 최신 통합 버전은 해당 브랜치를 확인해 주세요.
 <br>
 
 ## 🔗 Project Resources
@@ -12,6 +17,7 @@
 - 📊 Presentation: 
 - 🎥 Demo Video:
 <br>
+
 
 ## 팀원 이메일
 - 권신용: sbeetle1003@gmail.com
