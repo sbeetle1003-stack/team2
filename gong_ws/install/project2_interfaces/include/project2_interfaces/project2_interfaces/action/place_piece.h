@@ -1,0 +1,1 @@
+/home/ju/team2/gong_ws/build/project2_interfaces/rosidl_generator_c/project2_interfaces/action/place_piece.h

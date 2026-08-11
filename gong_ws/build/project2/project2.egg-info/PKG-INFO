@@ -1,0 +1,8 @@
+Metadata-Version: 2.1
+Name: project2
+Version: 0.1.0
+Summary: Vision-based tic-tac-toe simulation and pick-and-place controller.
+Maintainer: team2
+Maintainer-email: luckymijin0608@gmail.com
+License: Apache-2.0
+Provides-Extra: test

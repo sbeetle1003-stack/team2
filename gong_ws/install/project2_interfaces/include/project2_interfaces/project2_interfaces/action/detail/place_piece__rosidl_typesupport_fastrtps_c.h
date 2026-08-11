@@ -1,0 +1,1 @@
+/home/ju/team2/gong_ws/build/project2_interfaces/rosidl_typesupport_fastrtps_c/project2_interfaces/action/detail/place_piece__rosidl_typesupport_fastrtps_c.h

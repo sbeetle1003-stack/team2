@@ -1,0 +1,1 @@
+/home/ju/team2/gong_ws/build/project2_interfaces/rosidl_cmake/rosidl_cmake_aggregate_target-extras.cmake

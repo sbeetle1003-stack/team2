@@ -1,0 +1,39 @@
+// generated from rosidl_adapter/resource/action.idl.em
+// with input from project2_interfaces/action/PlacePiece.action
+// generated code does not contain a copyright notice
+
+
+module project2_interfaces {
+  module action {
+    @verbatim (language="comment", text=
+      "Goal: row-major tic-tac-toe cell index (0..8).")
+    struct PlacePiece_Goal {
+      uint8 cell_id;
+    };
+    module PlacePiece_Result_Constants {
+      const uint8 SUCCESS = 0;
+      const uint8 INVALID_CELL = 1;
+      const uint8 ROBOT_NOT_READY = 2;
+      const uint8 PLAN_FAILED = 3;
+      const uint8 EXECUTION_FAILED = 4;
+      const uint8 NO_PIECES_LEFT = 5;
+      const uint8 CANCELLED = 6;
+    };
+    @verbatim (language="comment", text=
+      "Result.")
+    struct PlacePiece_Result {
+      boolean success;
+
+      uint8 error_code;
+
+      string message;
+    };
+    @verbatim (language="comment", text=
+      "Feedback.")
+    struct PlacePiece_Feedback {
+      string stage;
+
+      float progress;
+    };
+  };
+};

@@ -282,6 +282,60 @@
       </link>
     </model>
 
+    <!-- Robot pieces are arranged along the near supply line. -->
+    <include>
+      <uri>model://aruco_cube_6</uri>
+      <name>robot_cube_6</name>
+      <pose>0.10 -0.20 0.025 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://aruco_cube_7</uri>
+      <name>robot_cube_7</name>
+      <pose>0.15 -0.20 0.025 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://aruco_cube_8</uri>
+      <name>robot_cube_8</name>
+      <pose>0.20 -0.20 0.025 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://aruco_cube_9</uri>
+      <name>robot_cube_9</name>
+      <pose>0.25 -0.20 0.025 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://aruco_cube_10</uri>
+      <name>robot_cube_10</name>
+      <pose>0.30 -0.20 0.025 0 0 0</pose>
+    </include>
+
+    <!-- Human pieces are arranged on the opposite side of the board. -->
+    <include>
+      <uri>model://aruco_cube_11</uri>
+      <name>human_cube_11</name>
+      <pose>0.10 0.20 0.025 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://aruco_cube_12</uri>
+      <name>human_cube_12</name>
+      <pose>0.15 0.20 0.025 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://aruco_cube_13</uri>
+      <name>human_cube_13</name>
+      <pose>0.20 0.20 0.025 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://aruco_cube_14</uri>
+      <name>human_cube_14</name>
+      <pose>0.25 0.20 0.025 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://aruco_cube_15</uri>
+      <name>human_cube_15</name>
+      <pose>0.30 0.20 0.025 0 0 0</pose>
+    </include>
+
   </world>
 </sdf>
 

@@ -1,0 +1,1 @@
+ament_cmake_symlink_install_targets("TARGET_FILES" "/home/ju/team2/gong_ws/build/project2_interfaces/rosidl_generator_py/project2_interfaces/project2_interfaces_s__rosidl_typesupport_introspection_c.so" "TARGETS" "project2_interfaces_s__rosidl_typesupport_introspection_c" "DESTINATION" "lib/python3.12/site-packages/project2_interfaces")

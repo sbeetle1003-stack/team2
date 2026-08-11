@@ -1,0 +1,1 @@
+/home/ju/team2/gong_ws/build/project2_interfaces/rosidl_generator_rs/project2_interfaces/rust/src/lib.rs

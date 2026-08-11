@@ -1,0 +1,1 @@
+/home/ju/team2/gong_ws/build/project2_interfaces/ament_cmake_environment_hooks/local_setup.bash

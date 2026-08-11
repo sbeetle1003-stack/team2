@@ -1,0 +1,13 @@
+{
+  "package_name": "project2_interfaces",
+  "output_dir": "/home/ju/team2/gong_ws/build/project2_interfaces/rosidl_generator_type_description/project2_interfaces",
+  "idl_tuples": [
+    "/home/ju/team2/gong_ws/build/project2_interfaces/rosidl_adapter/project2_interfaces:action/PlacePiece.idl"
+  ],
+  "include_paths": [
+    "service_msgs:/opt/ros/jazzy/share/service_msgs",
+    "builtin_interfaces:/opt/ros/jazzy/share/builtin_interfaces",
+    "action_msgs:/opt/ros/jazzy/share/action_msgs",
+    "unique_identifier_msgs:/opt/ros/jazzy/share/unique_identifier_msgs"
+  ]
+}
