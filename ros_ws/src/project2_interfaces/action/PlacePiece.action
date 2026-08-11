@@ -1,0 +1,19 @@
+# Goal: row-major tic-tac-toe cell index (0..8).
+uint8 cell_id
+---
+# Result.
+uint8 SUCCESS=0
+uint8 INVALID_CELL=1
+uint8 ROBOT_NOT_READY=2
+uint8 PLAN_FAILED=3
+uint8 EXECUTION_FAILED=4
+uint8 NO_PIECES_LEFT=5
+uint8 CANCELLED=6
+
+bool success
+uint8 error_code
+string message
+---
+# Feedback.
+string stage
+float32 progress
