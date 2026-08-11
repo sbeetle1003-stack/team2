@@ -66,11 +66,12 @@
 - 프로젝트 계획서: https://docs.google.com/document/d/1ujhqk1tdocbYJao8EDuLnZ8Bm_JgyH2_NuoS8eUxt3c/edit?usp=sharing
 
 ---
-#오전
+## 오전
 - 권신용
   - Ubuntu -> wsl 코드 최적화 방향성 모색
 - 곽정미
-  - 
+  - 변경된 주제에 맞춰 계획서 작성, 시스템 구조 설계
+  - 신규 ROS2 Workspace·Git Repository 및 tictactoe_vision 패키지 구축, OpenCV 카메라 및 ArUco Marker 인식 테스트
 - 이명연
   - 좌표 추정 및 변환 개발
 - 주영찬
@@ -80,7 +81,7 @@
 
 
 ---
-#오후
+## 오후
 - 권신용
   - 
 - 곽정미
