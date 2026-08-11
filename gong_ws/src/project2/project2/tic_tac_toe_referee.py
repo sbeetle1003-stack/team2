@@ -11,6 +11,8 @@ from moveit.planning import MoveItPy
 from moveit_msgs.msg import CollisionObject
 from shape_msgs.msg import SolidPrimitive
 
+from project2.tic_tac_toe_ai import check_winner, choose_best_move, is_draw
+
 class TicTacToeRefereeNode(Node):
     def __init__(self):
         super().__init__('tic_tac_toe_referee')
@@ -109,7 +111,7 @@ class TicTacToeRefereeNode(Node):
                             if player_type == "HUMAN":
                                 self.board_state[cell_r][cell_c] = 1  # 사람 입력 (X)
                                 self.get_logger().info(f"사람(X)이 ({cell_r}, {cell_c}) 위치에 말을 놓았습니다.")
-                                self.game_state = "ROBOT_TURN"
+                                self.game_state = self.judge_and_advance("ROBOT_TURN")
 
         # 화면에 현재 틱택토 보드 상태 표시 창 렌더링
         self.draw_tictactoe_overlay(frame)
@@ -151,24 +153,31 @@ class TicTacToeRefereeNode(Node):
                 cv2.putText(frame, cell_text, (start_x + c * 50, start_y + 30 + r * 30),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
 
-    def execute_robot_turn(self):
-        """ 로봇(O)이 빈 칸을 찾아 말을 놓는 로직 수행 """
-        self.get_logger().info("로봇(O)이 다음 수를 계산하고 있습니다...")
-        
-        # 빈 칸 탐색 (가장 먼저 나오는 빈 칸 선택)
-        target_r, target_c = None, None
-        for r in range(3):
-            for c in range(3):
-                if self.board_state[r][c] == 0:
-                    target_r, target_c = r, c
-                    break
-            if target_r is not None:
-                break
+    def judge_and_advance(self, next_state_if_ongoing):
+        """ 매 수를 둔 직후 승패/무승부를 판정하고, 끝났으면 GAME_OVER로 전이한다. """
+        winner = check_winner(self.board_state)
+        if winner == 1:
+            self.get_logger().info("게임 종료: 사람(X) 승리!")
+            return "GAME_OVER"
+        if winner == 2:
+            self.get_logger().info("게임 종료: 로봇(O) 승리!")
+            return "GAME_OVER"
+        if is_draw(self.board_state):
+            self.get_logger().info("게임 종료: 무승부!")
+            return "GAME_OVER"
+        return next_state_if_ongoing
 
-        if target_r is None:
-            self.get_logger().info("게임판이 가득 찼습니다. 게임 종료!")
+    def execute_robot_turn(self):
+        """ 로봇(O)이 minimax로 최적의 수를 계산해 말을 놓는 로직 수행 """
+        self.get_logger().info("로봇(O)이 다음 수를 계산하고 있습니다...")
+
+        move = choose_best_move(self.board_state)
+        if move is None:
+            self.get_logger().info("더 이상 둘 수 있는 칸이 없습니다. 게임 종료!")
             self.game_state = "GAME_OVER"
             return
+
+        target_r, target_c = move
 
         # 목표 좌표 매핑
         target_x = 0.3 + (target_c - 1) * 0.08
@@ -183,7 +192,7 @@ class TicTacToeRefereeNode(Node):
         except Exception as e:
             self.get_logger().error(f"로봇 제어 중 오류 발생: {e}")
 
-        self.game_state = "WAIT_FOR_HUMAN"
+        self.game_state = self.judge_and_advance("WAIT_FOR_HUMAN")
 
 def main(args=None):
     rclpy.init(args=args)

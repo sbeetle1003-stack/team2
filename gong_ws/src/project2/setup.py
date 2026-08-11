@@ -29,6 +29,7 @@ setup(
         'console_scripts': [
             "aruco_tf_publisher = project2.aruco_tf_publisher:main",
             "tic_tac_toe_referee = project2.tic_tac_toe_referee:main",
+            "tic_tac_toe_manual_test = project2.tic_tac_toe_manual_test:main",
             "multi_aruco_tf_sub = project2.multi_aruco_tf_sub:main",
         ],
     },
