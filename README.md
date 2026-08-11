@@ -3,22 +3,23 @@
  - READMD.md 매일 11:40, 16:30 종합 후 작성
  - 주요 작업만 작성 예정, 추가 작성이 필요한 경우 README에 작성 후 팀장에게 얘기하면 확인하여 추가 작성할 계획.
  - 다른 좋은 의견이 있다면 언제든지 말씀해주세요.
+<br>
 
 ## 🔗 Project Resources
 
 - 📄 Project Proposal: https://docs.google.com/document/d/1ujhqk1tdocbYJao8EDuLnZ8Bm_JgyH2_NuoS8eUxt3c/edit?usp=sharing
 - 💻 Git Repository: https://github.com/sbeetle1003-stack/team2.git
 - 📊 Presentation: 
-- 🎥 Demo Video: 
+- 🎥 Demo Video:
+<br>
 
---- 
 ## 팀원 이메일
 - 권신용: sbeetle1003@gmail.com
 - 곽정미: utauloid.kk@gmail.com
 - 이명연: coolhk03@gmail.com
 - 주영찬:jyber9616@gmail.com
 - 박미진:luckymijin0608@gmail.com
-
+<br>
 
 # 2026-08-10(1일차)
 
