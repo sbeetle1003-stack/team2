@@ -107,7 +107,7 @@
 - 주영찬
   - manipulator 개발(pick & place logic)
 - 박미진
-  - 
+  - digital_twin 코드 작성
 
 - 금일 목표과제
 
