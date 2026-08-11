@@ -9,7 +9,7 @@
 - 권신용: sbeetle1003@gmail.com
 - 곽정미: utauloid.kk@gmail.com
 - 이명연:
-- 주영찬:
+- 주영찬:jyber9616@gmail.com
 - 박미진:luckymijin0608@gmail.com
 
 
