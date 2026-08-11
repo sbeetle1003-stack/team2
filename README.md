@@ -1,3 +1,4 @@
+# 현재 통합 개발 브랜치(feature/integration)
 ## Branch Structure
 
 현재 프로젝트는 기능별 브랜치에서 개발한 뒤 통합 브랜치에서 연결 및 테스트하는 방식으로 진행
