@@ -64,15 +64,16 @@
 ---
 #오전
 - 권신용
-  - 
+  - Ubuntu -> wsl 코드 최적화 방향성 모색
+  - minimax algorithm Demo version test
 - 곽정미
   - 
 - 이명연
-  - 
+  -좌표 추정 및 변환 개발
 - 주영찬
-  - 
+  - 3by3 tic tac toe manipulator 개발 환경 구축
 - 박미진
-  - 
+  - tic tac toe simulation 환경 구축
 
 
 ---
