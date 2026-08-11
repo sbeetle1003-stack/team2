@@ -99,7 +99,9 @@
 - 권신용
   - manipulator와 minimax algorithm 결합 후 시뮬 
 - 곽정미
-  - 
+  - 틱택토 게임 에셋(Board, Mark, ArUco Marker) 제작하고 ROI 및 HSV 기반 보드·말 인식 테스트 진행
+  - Vision 결과를 ROS2 Topic으로 연동하고, board_detector → referee → AI → Action Server까지 통합하여 Pick & Place dry-run 동작 확인
+  - 팀원 작업 파일을 취합·정리하여 통합 Workspace를 구성하고 feature/integration 브랜치에 업로드
 - 이명연
   - 좌표 추정 및 변환
 - 주영찬
