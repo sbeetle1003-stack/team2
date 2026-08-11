@@ -20,10 +20,9 @@ class BoardDetectorNode(Node):
         self.publisher_ = self.create_publisher(String, '/board_state', 10)
         self.bridge = CvBridge()
         
-        # ArUco 디텍터 초기화 (OpenCV 4.x 기준)
+        # [수정 1] ArUco 디텍터 초기화 (OpenCV 구버전 호환)
         self.aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-        self.aruco_params = cv2.aruco.DetectorParameters()
-        self.detector = cv2.aruco.ArucoDetector(self.aruco_dict, self.aruco_params)
+        self.aruco_params = cv2.aruco.DetectorParameters_create()
 
         self.get_logger().info("Board Detector Node has been started.")
 
@@ -36,7 +35,13 @@ class BoardDetectorNode(Node):
 
         # 1. ArUco 마커 검출 (보드 셀 식별용 ID: 0 ~ 8)
         gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
-        corners, ids, rejected = self.detector.detectMarkers(gray)
+        
+        # [수정 2] 구버전 방식으로 마커 검출 함수 직접 호출
+        corners, ids, rejected = cv2.aruco.detectMarkers(
+            gray, 
+            self.aruco_dict, 
+            parameters=self.aruco_params
+        )
 
         # 3x3 보드 상태 초기화 (기본값: UNKNOWN)
         board_state = [['UNKNOWN' for _ in range(3)] for _ in range(3)]
