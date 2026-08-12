@@ -7,7 +7,7 @@
                          │
           ┌──────────────┼──────────────┐
           ↓              ↓              ↓
-      A PC         B PC           C PC
+       A PC             B PC           C PC
     team2/ros_ws    team2/ros_ws    team2/ros_ws
 
 
