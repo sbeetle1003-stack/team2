@@ -61,6 +61,8 @@ setup(
             'pick_place_controller = project2.pick_place_controller:main',
             'tic_tac_toe_referee = project2.tic_tac_toe_referee:main',
             'tic_tac_toe_manual_test = project2.tic_tac_toe_manual_test:main',
+            'digital_twin_board = project2.digital_twin_board:main',
+            'digital_twin_robot = project2.digital_twin_robot:main',
         ],
     },
 )
