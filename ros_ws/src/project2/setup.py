@@ -37,6 +37,10 @@ data_files = [
         os.path.join('share', package_name, 'config'),
         glob('config/*.yaml'),
     ),
+    (
+        os.path.join('share', package_name, 'models', 'textures'), 
+        glob('models/textures/*')
+    ),
 ]
 data_files.extend(collect_data_files('world'))
 data_files.extend(collect_data_files('models'))
@@ -63,6 +67,9 @@ setup(
             'tic_tac_toe_manual_test = project2.tic_tac_toe_manual_test:main',
             'digital_twin_board = project2.digital_twin_board:main',
             'digital_twin_robot = project2.digital_twin_robot:main',
+            'create_aruco_maker = project2.create_aruco_maker:main',
+            'manipulation_geometry = project2.manipulation_geometry:main',
+            
         ],
     },
 )
