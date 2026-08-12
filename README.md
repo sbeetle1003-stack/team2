@@ -28,7 +28,13 @@
 <br>
 
 # 2026-08-10(1일차)
+~~Occlusion-Aware Active Perception for Tomato Harvesting Using Deep Learning and a ROS2 Manipulator~~  
+~~딥러닝과 ROS2 매니퓰레이터를 이용한 토마토 수확 대상의 가림 인지 기반 능동 시각 시스템~~ 
 
+> **주제 변경:** 환경 구축 및 팀원 간 개발 환경 통일의 어려움으로 인해
+> 2일차부터 틱택토 프로젝트로 변경함.
+
+- 기존 계획서: https://docs.google.com/document/d/1Da4qCqeY5nMt9YkbcyU7bKz6OxcQ_4JnLeU_khmT6Bo/edit?usp=sharing
 ---
 ## 오전
 - 권신용
@@ -76,7 +82,9 @@
 
 
 # 2026-08-11(2일차)
-### 프로젝트 주제 변경(ROS2 매니퓰레이터와 Gazebo 디지털 트윈을 이용한 비전 기반 자율 틱택토 시스템)
+### 프로젝트 주제 변경  
+Vision-Based Autonomous Tic-Tac-Toe with a ROS2 Manipulator and Gazebo Digital Twin  
+(ROS2 매니퓰레이터와 Gazebo 디지털 트윈을 이용한 비전 기반 자율 틱택토 시스템)  
 - 프로젝트 계획서: https://docs.google.com/document/d/1ujhqk1tdocbYJao8EDuLnZ8Bm_JgyH2_NuoS8eUxt3c/edit?usp=sharing
 
 ---
