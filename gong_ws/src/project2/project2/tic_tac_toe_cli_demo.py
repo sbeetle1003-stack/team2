@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """틱택토 가상 시뮬레이션 (터미널 콘솔용, ROS/Gazebo 없이 로직만 확인).
 
-사람(X)이 좌표를 입력하면 로봇(O)이 minimax로 응수한다.
+사람(O)이 좌표를 입력하면 로봇(X)이 minimax로 응수한다.
 python3 tic_tac_toe_cli_demo.py 로 직접 실행하거나,
 run_scripted_demo()로 스크립트 시나리오를 자동 재생할 수 있다.
 """
@@ -16,7 +16,7 @@ from project2.tic_tac_toe_ai import (
     is_valid_move,
 )
 
-SYMBOLS = {EMPTY: ".", HUMAN: "X", ROBOT: "O"}
+SYMBOLS = {EMPTY: ".", HUMAN: "O", ROBOT: "X"}
 
 
 def print_board(board: list[list[int]]) -> None:
@@ -29,10 +29,10 @@ def announce_result(board: list[list[int]]) -> bool:
     """게임이 끝났으면 결과를 출력하고 True를 반환한다."""
     winner = check_winner(board)
     if winner == HUMAN:
-        print(">>> 사람(X) 승리!")
+        print(">>> 사람(O) 승리!")
         return True
     if winner == ROBOT:
-        print(">>> 로봇(O) 승리!")
+        print(">>> 로봇(X) 승리!")
         return True
     if is_draw(board):
         print(">>> 무승부!")
@@ -52,7 +52,7 @@ def run_interactive() -> None:
     print_board(board)
 
     while True:
-        raw = input("사람(X)의 수: ").strip().split()
+        raw = input("사람(O)의 수: ").strip().split()
         if len(raw) != 2:
             print("형식이 잘못됐습니다. 예: 2 2")
             continue
@@ -80,7 +80,7 @@ def run_interactive() -> None:
             break
         r, c = move
         board[r][c] = ROBOT
-        print(f"로봇(O)이 ({r + 1}, {c + 1})에 두었습니다.")
+        print(f"로봇(X)이 ({r + 1}, {c + 1})에 두었습니다.")
         print_board(board)
         if announce_result(board):
             break
@@ -102,7 +102,7 @@ def run_scripted_demo(human_moves: list[tuple[int, int]]) -> list[list[int]]:
             continue
 
         board[row][col] = HUMAN
-        print(f"사람(X) -> ({row_in}, {col_in})")
+        print(f"사람(O) -> ({row_in}, {col_in})")
         print_board(board)
         if announce_result(board):
             return board
@@ -112,7 +112,7 @@ def run_scripted_demo(human_moves: list[tuple[int, int]]) -> list[list[int]]:
             return board
         r, c = move
         board[r][c] = ROBOT
-        print(f"로봇(O) -> ({r + 1}, {c + 1})")
+        print(f"로봇(X) -> ({r + 1}, {c + 1})")
         print_board(board)
         if announce_result(board):
             return board

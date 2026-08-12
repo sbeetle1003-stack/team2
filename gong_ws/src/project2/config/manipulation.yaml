@@ -1,0 +1,43 @@
+pick_place_controller:
+  ros__parameters:
+    use_sim_time: true
+    base_frame: link1
+    tool_frame: end_effector_link
+
+    # Board center and row-major 3x3 spacing in the robot base frame.
+    board_origin_x: 0.30
+    board_origin_y: 0.0
+    cell_spacing: 0.08
+
+    # Five robot pieces are arranged from left to right at the supply line.
+    supply_x: 0.10
+    supply_y: -0.20
+    supply_spacing: 0.05
+    piece_count: 5
+
+    # Tune these heights after checking the real gripper/tool offset.
+    # pre_place_z/retreat_z are lower than pre_grasp_z/lift_z: at z=0.15 the
+    # two far corner cells (row-major 2 and 8, x=0.38) have no IK solution
+    # (verified via /compute_ik), but every board cell is reachable at
+    # z<=0.11. 0.10 keeps a small margin under that threshold while staying
+    # above place_z for approach/retreat clearance.
+    pre_grasp_z: 0.15
+    grasp_z: 0.075
+    lift_z: 0.15
+    pre_place_z: 0.10
+    place_z: 0.075
+    retreat_z: 0.10
+
+    # OpenManipulator-X tutorial-compatible default orientation.
+    orientation_x: 0.0
+    orientation_y: 0.0
+    orientation_z: 0.0
+    orientation_w: 1.0
+
+    return_home: true
+    add_table_collision: false
+    # Gazebo-only workaround for unsupported gripper mimic constraints.
+    # Set false when controlling the real OpenManipulator-X.
+    simulate_piece_attachment: true
+    piece_rest_z: 0.025
+    dry_run: false

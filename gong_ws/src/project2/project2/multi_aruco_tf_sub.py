@@ -111,8 +111,8 @@ class MultiArucoTfPublisher(Node):
         self.camera_matrix = None
         self.dist_coeffs = None
 
-        self.camera_link_frame = "/camera_link"
-        self.camera_optical_frame = "/camera_optical"
+        self.camera_link_frame = "camera_link"
+        self.camera_optical_frame = "camera_optical"
 
         # 큐브 마커 규격 설정 (예: 4cm 큐브 마커)
         self.marker_length = 0.04

@@ -1,198 +1,272 @@
-#!/usr/bin/env python3
-import sys
-import rclpy
-from rclpy.node import Node
-from sensor_msgs.msg import Image, CameraInfo
-from cv_bridge import CvBridge
-import cv2
-import numpy as np
-from geometry_msgs.msg import Pose
-from moveit.planning import MoveItPy
-from moveit_msgs.msg import CollisionObject
-from shape_msgs.msg import SolidPrimitive
+"""Simple camera referee that delegates robot motion to PlacePiece action."""
 
-from project2.tic_tac_toe_ai import check_winner, choose_best_move, is_draw
+import cv2
+from cv_bridge import CvBridge
+import numpy as np
+from project2_interfaces.action import PlacePiece
+import rclpy
+from rclpy.action import ActionClient
+from rclpy.node import Node
+from ros_gz_interfaces.msg import Entity
+from ros_gz_interfaces.srv import SetEntityPose
+from sensor_msgs.msg import CameraInfo, Image
+
+from project2.manipulation_geometry import cell_center
+from project2.tic_tac_toe_ai import HUMAN, ROBOT, check_winner, choose_best_move, is_draw
+
+# config/manipulation.yaml의 board_origin_x/y, cell_spacing과 일치해야 한다.
+BOARD_ORIGIN_X = 0.30
+BOARD_ORIGIN_Y = 0.0
+CELL_SPACING = 0.08
+HUMAN_MARKER_Z = 0.04  # board top surface (~0.035) + marker half-thickness
+HUMAN_MARKER_COUNT = 5
+
 
 class TicTacToeRefereeNode(Node):
+    """Detect human pieces and request a robot placement for the next turn."""
+
     def __init__(self):
         super().__init__('tic_tac_toe_referee')
-        
-        # 1. MoveItPy 초기화
-        self.moveit = MoveItPy(node_name="tictactoe_moveit")
-        self.arm = self.moveit.get_planning_component("arm")
-        self.gripper = self.moveit.get_planning_component("gripper")
-        
-        # 2. Planning Scene에 테이블 장애물 추가 (SDF 스펙과 동일하게 맞춤)
-        self.add_table_collision()
-        
-        # 3. 카메라 및 ArUco 비전 설정
+
+        self.declare_parameter('image_topic', '/gripper_camera/image_raw')
+        self.declare_parameter('camera_info_topic', '/gripper_camera/camera_info')
+
         self.bridge = CvBridge()
-        self.sub_img = self.create_subscription(Image, "/camera/image_raw", self.image_callback, 10)
-        self.sub_info = self.create_subscription(CameraInfo, "/camera/camera_info", self.info_callback, 10)
-        
         self.camera_matrix = None
         self.dist_coeffs = None
+        self.board_state = [[0, 0, 0] for _ in range(3)]
+        self.game_state = 'WAIT_FOR_HUMAN'
+        self.pending_cell = None
 
-        # ArUco 딕셔너리 (4x4_50)
-        self.aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-        self.aruco_params = cv2.aruco.DetectorParameters()
+        self.aruco_dict = cv2.aruco.getPredefinedDictionary(
+            cv2.aruco.DICT_4X4_50
+        )
+        if hasattr(cv2.aruco, 'DetectorParameters_create'):
+            self.aruco_params = cv2.aruco.DetectorParameters_create()
+        else:
+            self.aruco_params = cv2.aruco.DetectorParameters()
 
-        # 3x3 틱택토 보드 상태 (0: 빈칸, 1: 사람(X), 2: 로봇(O))
-        self.board_state = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-        
-        # 게임 상태 머신 ("WAIT_FOR_HUMAN" -> "ROBOT_TURN" -> "GAME_OVER")
-        self.game_state = "WAIT_FOR_HUMAN"
-        
-        self.get_logger().info("틱택토 심판 및 로봇팔 제어 노드가 준비되었습니다.")
+        self.create_subscription(
+            Image,
+            self.get_parameter('image_topic').value,
+            self.image_callback,
+            10,
+        )
+        self.create_subscription(
+            CameraInfo,
+            self.get_parameter('camera_info_topic').value,
+            self.info_callback,
+            10,
+        )
+        self.place_piece_client = ActionClient(self, PlacePiece, 'place_piece')
 
-    def add_table_collision(self):
-        planning_scene_monitor = self.moveit.get_planning_scene_monitor()
-        collision_object = CollisionObject()
-        collision_object.header.frame_id = "link1"
-        collision_object.id = "tictactoe_table"
-        
-        box = SolidPrimitive()
-        box.type = SolidPrimitive.BOX
-        box.dimensions = [0.8, 0.8, 0.05]  # SDF 테이블 크기와 일치
-        
-        box_pose = Pose()
-        box_pose.position.x = 0.3
-        box_pose.position.y = 0.0
-        box_pose.position.z = -0.025
-        
-        collision_object.primitives.append(box)
-        collision_object.primitive_poses.append(box_pose)
-        collision_object.operation = CollisionObject.ADD
-        
-        planning_scene_monitor.process_collision_object(collision_object)
+        # 사람 수는 로봇 팔을 움직이지 않고, world에 미리 놓아둔 빨간 O
+        # 마커(human_marker_0..4)를 SetEntityPose로 해당 칸에 옮겨 표시한다.
+        self.human_piece_index = 0
+        self.set_pose_client = self.create_client(
+            SetEntityPose, '/world/tictactoe_world/set_pose'
+        )
 
-    def info_callback(self, msg: CameraInfo):
+        self.get_logger().info('틱택토 심판 노드 준비 완료')
+
+    def _place_human_marker(self, row, column):
+        """사람이 둔 칸에 빨간 O 마커를 옮겨 Gazebo에도 반영한다 (팔은 움직이지 않음)."""
+        if self.human_piece_index >= HUMAN_MARKER_COUNT:
+            self.get_logger().warning('사람 마커를 모두 사용했습니다 (표시는 생략).')
+            return
+        if not self.set_pose_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().warning('SetEntityPose 서비스를 찾을 수 없어 마커 표시를 생략합니다.')
+            return
+
+        cell_id = row * 3 + column
+        x, y = cell_center(cell_id, BOARD_ORIGIN_X, BOARD_ORIGIN_Y, CELL_SPACING)
+        request = SetEntityPose.Request()
+        request.entity.name = f'human_marker_{self.human_piece_index}'
+        request.entity.type = Entity.MODEL
+        request.pose.position.x = float(x)
+        request.pose.position.y = float(y)
+        request.pose.position.z = float(HUMAN_MARKER_Z)
+        request.pose.orientation.w = 1.0
+        self.set_pose_client.call_async(request)
+        self.human_piece_index += 1
+
+    def info_callback(self, msg):
+        """Cache calibrated camera parameters."""
         if self.camera_matrix is None:
-            self.camera_matrix = np.array(msg.k, dtype=np.float64).reshape(3, 3)
-            self.dist_coeffs = np.array(msg.d, dtype=np.float64)
+            self.camera_matrix = np.asarray(msg.k, dtype=np.float64).reshape(3, 3)
+            self.dist_coeffs = np.asarray(msg.d, dtype=np.float64)
 
-    def image_callback(self, msg: Image):
+    def image_callback(self, msg):
+        """Update the human board state from ArUco observations."""
         if self.camera_matrix is None:
             return
 
-        frame = self.bridge.imgmsg_to_cv2(msg, encoding="bgr8")
+        frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-        # ArUco 마커 검출
-        corners, ids, rejected = cv2.aruco.detectMarkers(gray, self.aruco_dict, parameters=self.aruco_params)
+        corners, ids, _ = cv2.aruco.detectMarkers(
+            gray,
+            self.aruco_dict,
+            parameters=self.aruco_params,
+        )
 
         if ids is not None:
             cv2.aruco.drawDetectedMarkers(frame, corners, ids)
-            rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, 0.03, self.camera_matrix, self.dist_coeffs)
+            _, translations, _ = cv2.aruco.estimatePoseSingleMarkers(
+                corners,
+                0.04,
+                self.camera_matrix,
+                self.dist_coeffs,
+            )
+            for index, marker_id in enumerate(ids.flatten()):
+                if not 11 <= marker_id <= 15:
+                    continue
+                translation = translations[index][0]
+                row, column = self.get_board_cell(
+                    translation[0],
+                    translation[1],
+                )
+                if row is None or self.board_state[row][column] != 0:
+                    continue
+                if self.game_state != 'WAIT_FOR_HUMAN':
+                    continue
+                self.board_state[row][column] = HUMAN
+                self.get_logger().info(f'사람 수 감지: ({row}, {column})')
+                self._place_human_marker(row, column)
+                self.game_state = self.judge_and_advance('ROBOT_TURN')
 
-            for i, marker_id in enumerate(ids.flatten()):
-                t = tvecs[i][0]  # [x, y, z] 카메라 좌표계 기준 마커 위치
-                
-                player_type = None
-                symbol = ""
-                # 규칙 적용: 11~15는 사람 (X), 6~10은 로봇 (O)
-                if 11 <= marker_id <= 15:
-                    player_type = "HUMAN"
-                    symbol = "X"
-                elif 6 <= marker_id <= 10:
-                    player_type = "ROBOT"
-                    symbol = "O"
-
-                if player_type:
-                    # 화면에 ID 및 심볼 오버레이
-                    text = f"ID:{marker_id} ({symbol})"
-                    cv2.putText(frame, text, (int(corners[i][0][0][0]), int(corners[i][0][0][1] - 10)),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-
-                    # 3x3 보드판 셀 위치 판정
-                    cell_r, cell_c = self.get_board_cell(t[0], t[1])
-                    if cell_r is not None and cell_c is not None:
-                        if self.board_state[cell_r][cell_c] == 0:
-                            if player_type == "HUMAN":
-                                self.board_state[cell_r][cell_c] = 1  # 사람 입력 (X)
-                                self.get_logger().info(f"사람(X)이 ({cell_r}, {cell_c}) 위치에 말을 놓았습니다.")
-                                self.game_state = self.judge_and_advance("ROBOT_TURN")
-
-        # 화면에 현재 틱택토 보드 상태 표시 창 렌더링
         self.draw_tictactoe_overlay(frame)
-        cv2.imshow("Tic-Tac-Toe Referee", frame)
-        if cv2.waitKey(1) == ord('q'):
-            raise KeyboardInterrupt
+        cv2.imshow('Tic-Tac-Toe Referee', frame)
+        cv2.waitKey(1)
 
-        # 로봇 턴일 경우 실행
-        if self.game_state == "ROBOT_TURN":
-            self.execute_robot_turn()
+        if self.game_state == 'ROBOT_TURN' and self.pending_cell is None:
+            self.request_robot_turn()
 
-    def get_board_cell(self, x, y):
-        """ 마커의 3차원 위치를 3x3 그리드 인덱스로 매핑 """
-        if -0.15 <= x < -0.05: col = 0
-        elif -0.05 <= x <= 0.05: col = 1
-        elif 0.05 < x <= 0.15: col = 2
-        else: return None, None
+    @staticmethod
+    def get_board_cell(x, y):
+        """Map a board-aligned marker position to a grid row and column.
 
-        if -0.15 <= y < -0.05: row = 0
-        elif -0.05 <= y <= 0.05: row = 1
-        elif 0.05 < y <= 0.15: row = 2
-        else: return None, None
+        NOTE: x/y here are marker translations relative to the camera, not
+        world/board_origin coordinates, so this hasn't been re-verified
+        against the column mirror now used in manipulation_geometry.cell_center
+        (this path is unused while the camera is offline). Re-check column
+        direction against a live camera before relying on this again.
+        """
+        if -0.15 <= x < -0.05:
+            column = 0
+        elif -0.05 <= x <= 0.05:
+            column = 1
+        elif 0.05 < x <= 0.15:
+            column = 2
+        else:
+            return None, None
 
-        return row, col
-
-    def draw_tictactoe_overlay(self, frame):
-        """ 영상 상단에 3x3 보드 상태('X', 'O')를 시각적으로 렌더링 """
-        start_x, start_y = 30, 50
-        cv2.putText(frame, "--- Tic-Tac-Toe Board State ---", (start_x, start_y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
-        
-        for r in range(3):
-            for c in range(3):
-                val = self.board_state[r][c]
-                char = "."
-                if val == 1: char = "X"      # 사람
-                elif val == 2: char = "O"    # 로봇
-                
-                cell_text = f"[{char}]"
-                cv2.putText(frame, cell_text, (start_x + c * 50, start_y + 30 + r * 30),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
+        if -0.15 <= y < -0.05:
+            row = 0
+        elif -0.05 <= y <= 0.05:
+            row = 1
+        elif 0.05 < y <= 0.15:
+            row = 2
+        else:
+            return None, None
+        return row, column
 
     def judge_and_advance(self, next_state_if_ongoing):
-        """ 매 수를 둔 직후 승패/무승부를 판정하고, 끝났으면 GAME_OVER로 전이한다. """
+        """Check for a win/draw after a move and transition to GAME_OVER if so."""
         winner = check_winner(self.board_state)
-        if winner == 1:
-            self.get_logger().info("게임 종료: 사람(X) 승리!")
-            return "GAME_OVER"
-        if winner == 2:
-            self.get_logger().info("게임 종료: 로봇(O) 승리!")
-            return "GAME_OVER"
+        if winner == HUMAN:
+            self.get_logger().info('게임 종료: 사람(O) 승리!')
+            return 'GAME_OVER'
+        if winner == ROBOT:
+            self.get_logger().info('게임 종료: 로봇(X) 승리!')
+            return 'GAME_OVER'
         if is_draw(self.board_state):
-            self.get_logger().info("게임 종료: 무승부!")
-            return "GAME_OVER"
+            self.get_logger().info('게임 종료: 무승부!')
+            return 'GAME_OVER'
         return next_state_if_ongoing
 
-    def execute_robot_turn(self):
-        """ 로봇(O)이 minimax로 최적의 수를 계산해 말을 놓는 로직 수행 """
-        self.get_logger().info("로봇(O)이 다음 수를 계산하고 있습니다...")
-
+    def request_robot_turn(self):
+        """Ask minimax for the robot's optimal move and send it to the motion action server."""
         move = choose_best_move(self.board_state)
         if move is None:
-            self.get_logger().info("더 이상 둘 수 있는 칸이 없습니다. 게임 종료!")
-            self.game_state = "GAME_OVER"
+            self.game_state = 'GAME_OVER'
+            return
+        target = move[0] * 3 + move[1]
+
+        if not self.place_piece_client.wait_for_server(timeout_sec=0.1):
+            self.get_logger().warning('PlacePiece action server를 기다리는 중입니다.')
             return
 
-        target_r, target_c = move
+        goal = PlacePiece.Goal()
+        goal.cell_id = target
+        self.pending_cell = target
+        future = self.place_piece_client.send_goal_async(
+            goal,
+            feedback_callback=self.place_feedback_callback,
+        )
+        future.add_done_callback(self.goal_response_callback)
 
-        # 목표 좌표 매핑
-        target_x = 0.3 + (target_c - 1) * 0.08
-        target_y = (target_r - 1) * 0.08
+    def goal_response_callback(self, future):
+        """Start waiting for the placement result after goal acceptance."""
+        goal_handle = future.result()
+        if not goal_handle.accepted:
+            self.get_logger().error('PlacePiece goal이 거부되었습니다.')
+            self.pending_cell = None
+            return
+        result_future = goal_handle.get_result_async()
+        result_future.add_done_callback(self.place_result_callback)
 
-        self.get_logger().info(f"로봇 목표 위치: 셀({target_r}, {target_c}) -> X:{target_x:.2f}, Y:{target_y:.2f}")
+    def place_feedback_callback(self, feedback_msg):
+        """Log the current manipulator stage."""
+        feedback = feedback_msg.feedback
+        self.get_logger().info(
+            f'Pick & Place: {feedback.stage} ({feedback.progress:.0f}%)'
+        )
 
-        try:
-            # MoveItPy를 활용한 그리퍼 및 관절 제어 (필요에 따라 픽앤플레이스 포즈 지정)
-            self.board_state[target_r][target_c] = 2  # 로봇 입력 (O)
-            self.get_logger().info(f"로봇(O)이 셀 ({target_r}, {target_c})에 말을 놓았습니다.")
-        except Exception as e:
-            self.get_logger().error(f"로봇 제어 중 오류 발생: {e}")
+    def place_result_callback(self, future):
+        """Commit the robot move only after physical execution succeeds."""
+        result = future.result().result
+        target = self.pending_cell
+        self.pending_cell = None
+        if result.success and target is not None:
+            row, column = divmod(target, 3)
+            self.board_state[row][column] = ROBOT
+            self.get_logger().info(result.message)
+            self.game_state = self.judge_and_advance('WAIT_FOR_HUMAN')
+        else:
+            self.game_state = 'ERROR'
+            self.get_logger().error(result.message)
 
-        self.game_state = self.judge_and_advance("WAIT_FOR_HUMAN")
+    def draw_tictactoe_overlay(self, frame):
+        """Draw the currently committed board state on the camera image."""
+        start_x, start_y = 30, 50
+        cv2.putText(
+            frame,
+            '--- Tic-Tac-Toe Board State ---',
+            (start_x, start_y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            (255, 255, 255),
+            2,
+        )
+        for row in range(3):
+            for column in range(3):
+                value = self.board_state[row][column]
+                symbol = '.' if value == 0 else ('O' if value == 1 else 'X')
+                cv2.putText(
+                    frame,
+                    f'[{symbol}]',
+                    (start_x + column * 50, start_y + 30 + row * 30),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8,
+                    (0, 255, 255),
+                    2,
+                )
+
+    def destroy_node(self):
+        cv2.destroyAllWindows()
+        self.place_piece_client.destroy()
+        super().destroy_node()
+
 
 def main(args=None):
     rclpy.init(args=args)
@@ -202,9 +276,6 @@ def main(args=None):
     except KeyboardInterrupt:
         pass
     finally:
-        cv2.destroyAllWindows()
         node.destroy_node()
-        rclpy.try_shutdown()
-
-if __name__ == '__main__':
-    main()
+        if rclpy.ok():
+            rclpy.shutdown()

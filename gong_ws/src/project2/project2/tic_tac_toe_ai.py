@@ -1,6 +1,8 @@
 """틱택토 승패 판정 + Minimax 최적수 탐색.
 
-board_state: 3x3 list, 0=빈칸(EMPTY), 1=사람(HUMAN/X), 2=로봇(ROBOT/O).
+board_state: 3x3 list, 0=빈칸(EMPTY), 1=사람(HUMAN/O), 2=로봇(ROBOT/X).
+사람이 항상 선수이며 O, 로봇은 항상 후수이며 X로 표시한다 (내부 값은
+동일, 화면/로그 표시 기호만 이렇게 정한다).
 tic_tac_toe_referee.py의 board_state와 동일한 값 규약을 쓴다.
 ROS/Gazebo와 무관한 순수 로직이라 단독으로 임포트·테스트할 수 있다.
 """
@@ -30,10 +32,24 @@ def check_winner(board: list[list[int]]) -> int | None:
     return None
 
 
+def _line_open_for(board: list[list[int]], line, player: int) -> bool:
+    """해당 줄에 상대방 말이 하나도 없어 player가 아직 완성할 수 있으면 True."""
+    return all(board[r][c] in (EMPTY, player) for r, c in line)
+
+
 def is_draw(board: list[list[int]]) -> bool:
-    """승자 없이 보드가 다 찼으면 True."""
-    return check_winner(board) is None and all(
-        cell != EMPTY for row in board for cell in row
+    """승자가 없고, 남은 8개 줄 중 어느 쪽도 완성할 수 없으면 True.
+
+    3x3 틱택토는 보드가 다 차지 않아도(빈 칸이 1개만 남아도) 이미 결과가
+    결정되는 경우가 있다. 모든 줄이 이미 양쪽 말이 섞여 죽어 있으면(둘 다
+    완성 불가) 남은 빈 칸과 무관하게 무승부로 조기 판정한다. 보드가 실제로
+    다 찬 경우도 이 조건의 특수한 경우라 별도 처리가 필요 없다.
+    """
+    if check_winner(board) is not None:
+        return False
+    return not any(
+        _line_open_for(board, line, HUMAN) or _line_open_for(board, line, ROBOT)
+        for line in WIN_LINES
     )
 
 
