@@ -10,9 +10,10 @@ from rclpy.node import Node
 from ros_gz_interfaces.msg import Entity
 from ros_gz_interfaces.srv import SetEntityPose
 from sensor_msgs.msg import CameraInfo, Image
+from std_srvs.srv import Trigger
 
-from project2.manipulation_geometry import cell_center
-from project2.tic_tac_toe_ai import HUMAN, ROBOT, check_winner, choose_best_move, is_draw
+from project2.manipulation_geometry import cell_center, supply_position
+from project2.tic_tac_toe_ai import HUMAN, ROBOT, choose_best_move, game_outcome
 
 # config/manipulation.yaml의 board_origin_x/y, cell_spacing과 일치해야 한다.
 BOARD_ORIGIN_X = 0.30
@@ -20,6 +21,11 @@ BOARD_ORIGIN_Y = 0.0
 CELL_SPACING = 0.08
 HUMAN_MARKER_Z = 0.05  # matches config/manipulation.yaml piece_rest_z for the same thin-cylinder pieces
 HUMAN_MARKER_COUNT = 5
+# world 파일의 human_marker_0..4 초기 스폰 위치와 동일 (리셋 시 여기로 되돌린다).
+HUMAN_MARKER_PARK_X = 0.10
+HUMAN_MARKER_PARK_Y = 0.20
+HUMAN_MARKER_PARK_SPACING = 0.05
+HUMAN_MARKER_PARK_Z = 0.025
 
 
 class TicTacToeRefereeNode(Node):
@@ -66,29 +72,67 @@ class TicTacToeRefereeNode(Node):
         self.set_pose_client = self.create_client(
             SetEntityPose, '/world/tictactoe_world/set_pose'
         )
+        # 새 게임을 시작할 때 로봇 피스 공급 위치/인덱스를 초기화하는 서비스.
+        self.reset_pieces_client = self.create_client(Trigger, 'reset_pieces')
+        # 외부(카메라 파이프라인 등)에서 언제든 게임을 초기화할 수 있게 서비스로 노출한다.
+        self.reset_game_service = self.create_service(
+            Trigger, 'reset_game', self._reset_game_callback
+        )
 
         self.get_logger().info('틱택토 심판 노드 준비 완료')
+
+    def _set_entity_pose(self, name, x, y, z):
+        if not self.set_pose_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().warning('SetEntityPose 서비스를 찾을 수 없어 마커 이동을 생략합니다.')
+            return
+        request = SetEntityPose.Request()
+        request.entity.name = name
+        request.entity.type = Entity.MODEL
+        request.pose.position.x = float(x)
+        request.pose.position.y = float(y)
+        request.pose.position.z = float(z)
+        request.pose.orientation.w = 1.0
+        self.set_pose_client.call_async(request)
 
     def _place_human_marker(self, row, column):
         """사람이 둔 칸에 빨간 O 마커를 옮겨 Gazebo에도 반영한다 (팔은 움직이지 않음)."""
         if self.human_piece_index >= HUMAN_MARKER_COUNT:
             self.get_logger().warning('사람 마커를 모두 사용했습니다 (표시는 생략).')
             return
-        if not self.set_pose_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().warning('SetEntityPose 서비스를 찾을 수 없어 마커 표시를 생략합니다.')
-            return
 
         cell_id = row * 3 + column
         x, y = cell_center(cell_id, BOARD_ORIGIN_X, BOARD_ORIGIN_Y, CELL_SPACING)
-        request = SetEntityPose.Request()
-        request.entity.name = f'human_marker_{self.human_piece_index}'
-        request.entity.type = Entity.MODEL
-        request.pose.position.x = float(x)
-        request.pose.position.y = float(y)
-        request.pose.position.z = float(HUMAN_MARKER_Z)
-        request.pose.orientation.w = 1.0
-        self.set_pose_client.call_async(request)
+        self._set_entity_pose(f'human_marker_{self.human_piece_index}', x, y, HUMAN_MARKER_Z)
         self.human_piece_index += 1
+
+    def reset_game(self):
+        """보드/피스를 모두 초기 상태로 되돌리고 새 게임을 시작한다."""
+        for index in range(self.human_piece_index):
+            park_x, park_y = supply_position(
+                index, HUMAN_MARKER_PARK_X, HUMAN_MARKER_PARK_Y, HUMAN_MARKER_PARK_SPACING
+            )
+            self._set_entity_pose(f'human_marker_{index}', park_x, park_y, HUMAN_MARKER_PARK_Z)
+        self.human_piece_index = 0
+
+        if self.reset_pieces_client.wait_for_service(timeout_sec=2.0):
+            self.reset_pieces_client.call_async(Trigger.Request())
+        else:
+            self.get_logger().warning('pick_place_controller의 reset_pieces 서비스를 찾을 수 없습니다.')
+
+        self.board_state = [[0, 0, 0] for _ in range(3)]
+        self.game_state = 'WAIT_FOR_HUMAN'
+        self.pending_cell = None
+        self.get_logger().info('게임을 초기화했습니다. 새 게임을 시작하세요.')
+
+    def _reset_game_callback(self, request, response):
+        if self.pending_cell is not None:
+            response.success = False
+            response.message = '로봇이 동작 중입니다. 완료 후 다시 시도하세요.'
+            return response
+        self.reset_game()
+        response.success = True
+        response.message = '게임을 초기화했습니다.'
+        return response
 
     def info_callback(self, msg):
         """Cache calibrated camera parameters."""
@@ -172,14 +216,14 @@ class TicTacToeRefereeNode(Node):
 
     def judge_and_advance(self, next_state_if_ongoing):
         """Check for a win/draw after a move and transition to GAME_OVER if so."""
-        winner = check_winner(self.board_state)
-        if winner == HUMAN:
+        outcome = game_outcome(self.board_state)
+        if outcome == 'HUMAN':
             self.get_logger().info('게임 종료: 사람(O) 승리!')
             return 'GAME_OVER'
-        if winner == ROBOT:
+        if outcome == 'ROBOT':
             self.get_logger().info('게임 종료: 로봇(X) 승리!')
             return 'GAME_OVER'
-        if is_draw(self.board_state):
+        if outcome == 'DRAW':
             self.get_logger().info('게임 종료: 무승부!')
             return 'GAME_OVER'
         return next_state_if_ongoing

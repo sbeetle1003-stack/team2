@@ -22,6 +22,7 @@ from ros_gz_interfaces.msg import Entity
 from ros_gz_interfaces.srv import SetEntityPose
 from shape_msgs.msg import SolidPrimitive
 from std_msgs.msg import Empty
+from std_srvs.srv import Trigger
 
 from project2.manipulation_geometry import cell_center, supply_position
 
@@ -64,6 +65,9 @@ class PickPlaceController(Node):
         self.declare_parameter('add_table_collision', False)
         self.declare_parameter('simulate_piece_attachment', True)
         self.declare_parameter('piece_rest_z', 0.025)
+        # Matches the world file's initial spawn height for robot_cube_N in
+        # the supply line (resting on the table, not the elevated board).
+        self.declare_parameter('supply_rest_z', 0.025)
         self.declare_parameter('dry_run', False)
 
         self.base_frame = self.get_parameter('base_frame').value
@@ -235,6 +239,12 @@ class PickPlaceController(Node):
             cancel_callback=self.cancel_callback,
             callback_group=callback_group,
         )
+        self.reset_service = self.create_service(
+            Trigger,
+            'reset_pieces',
+            self.reset_pieces_callback,
+            callback_group=callback_group,
+        )
         mode = 'DRY-RUN' if self.dry_run else 'EXECUTE'
         self.get_logger().info(f'PlacePiece action server 준비 완료 ({mode})')
 
@@ -307,24 +317,24 @@ class PickPlaceController(Node):
         self._move_named(self.gripper, 'close', 'CLOSE_GRIPPER')
         self._attach_piece(piece_index)
 
-    def _set_piece_pose(self, piece_index, target_x, target_y):
+    def _set_piece_pose(self, piece_index, target_x, target_y, target_z=None, stage='RELEASE'):
         if not self.piece_pose_client.wait_for_service(timeout_sec=2.0):
-            raise MotionStageError('RELEASE', execution=True)
+            raise MotionStageError(stage, execution=True)
+        if target_z is None:
+            target_z = self.get_parameter('piece_rest_z').value
         request = SetEntityPose.Request()
         request.entity.name = f'robot_cube_{piece_index + 6}'
         request.entity.type = Entity.MODEL
         request.pose.position.x = float(target_x)
         request.pose.position.y = float(target_y)
-        request.pose.position.z = float(
-            self.get_parameter('piece_rest_z').value
-        )
+        request.pose.position.z = float(target_z)
         request.pose.orientation.w = 1.0
         future = self.piece_pose_client.call_async(request)
         deadline = time.monotonic() + 2.0
         while not future.done() and time.monotonic() < deadline:
             time.sleep(0.02)
         if not future.done() or not future.result().success:
-            raise MotionStageError('RELEASE', execution=True)
+            raise MotionStageError(stage, execution=True)
 
     def _open_and_detach(self, piece_index, target_x, target_y):
         self._move_named(self.gripper, 'open', 'RELEASE')
@@ -502,8 +512,40 @@ class PickPlaceController(Node):
             with self.busy_lock:
                 self.busy = False
 
+    def reset_pieces_callback(self, request, response):
+        """Teleport all robot pieces back to their supply slots for a new game."""
+        with self.busy_lock:
+            if self.busy:
+                response.success = False
+                response.message = 'Pick & Place 실행 중에는 리셋할 수 없습니다.'
+                return response
+            self.busy = True
+
+        try:
+            if self.simulate_piece_attachment:
+                supply_rest_z = self.get_parameter('supply_rest_z').value
+                for piece_index in range(self.piece_count):
+                    x, y = supply_position(
+                        piece_index, self.supply_x, self.supply_y, self.supply_spacing
+                    )
+                    self._set_piece_pose(
+                        piece_index, x, y, target_z=supply_rest_z, stage='RESET'
+                    )
+                    self._detach_piece(piece_index)
+            self.next_piece_index = 0
+            response.success = True
+            response.message = '피스 공급 위치를 초기화했습니다.'
+        except MotionStageError as error:
+            response.success = False
+            response.message = f'{error.stage} 단계에서 리셋 실패'
+        finally:
+            with self.busy_lock:
+                self.busy = False
+        return response
+
     def destroy_node(self):
         self.action_server.destroy()
+        self.reset_service.destroy()
         self.moveit.shutdown()
         super().destroy_node()
 

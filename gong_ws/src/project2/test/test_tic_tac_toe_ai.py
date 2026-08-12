@@ -6,6 +6,7 @@ from project2.tic_tac_toe_ai import (
     ROBOT,
     check_winner,
     choose_best_move,
+    game_outcome,
     is_draw,
     is_game_over,
     is_valid_move,
@@ -129,6 +130,60 @@ def test_minimax_never_loses_full_game_vs_itself():
         turn = HUMAN if turn == ROBOT else ROBOT
 
     assert check_winner(board) is None  # 무승부 (둘 다 완벽하면 아무도 못 이김)
+
+
+def test_game_outcome_none_while_ongoing():
+    board = empty_board()
+    board[0][0] = HUMAN
+    assert game_outcome(board) is None
+
+
+def test_game_outcome_human_win_row():
+    board = empty_board()
+    board[0] = [HUMAN, HUMAN, HUMAN]
+    assert game_outcome(board) == 'HUMAN'
+
+
+def test_game_outcome_robot_win_column():
+    board = empty_board()
+    for r in range(3):
+        board[r][2] = ROBOT
+    assert game_outcome(board) == 'ROBOT'
+
+
+def test_game_outcome_robot_win_diagonal():
+    board = empty_board()
+    board[0][2] = ROBOT
+    board[1][1] = ROBOT
+    board[2][0] = ROBOT
+    assert game_outcome(board) == 'ROBOT'
+
+
+def test_game_outcome_draw_full_board():
+    board = [
+        [ROBOT, HUMAN, ROBOT],
+        [ROBOT, HUMAN, HUMAN],
+        [HUMAN, ROBOT, ROBOT],
+    ]
+    assert game_outcome(board) == 'DRAW'
+
+
+def test_game_outcome_draw_early_with_one_cell_left():
+    board = [
+        [EMPTY, HUMAN, ROBOT],
+        [ROBOT, HUMAN, HUMAN],
+        [HUMAN, ROBOT, ROBOT],
+    ]
+    assert game_outcome(board) == 'DRAW'
+
+
+def test_game_outcome_none_when_two_cells_left_and_still_winnable():
+    board = [
+        [HUMAN, ROBOT, EMPTY],
+        [EMPTY, HUMAN, ROBOT],
+        [ROBOT, HUMAN, EMPTY],
+    ]
+    assert game_outcome(board) is None
 
 
 def _best_human_move(board):

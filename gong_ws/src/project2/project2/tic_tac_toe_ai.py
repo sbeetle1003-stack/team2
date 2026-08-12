@@ -57,6 +57,22 @@ def is_game_over(board: list[list[int]]) -> bool:
     return check_winner(board) is not None or is_draw(board)
 
 
+def game_outcome(board: list[list[int]]) -> str | None:
+    """게임 결과를 'HUMAN'/'ROBOT'/'DRAW' 중 하나로, 아직 진행 중이면 None으로 반환한다.
+
+    referee.py/manual_test.py의 judge_and_advance()가 이 함수 하나로 판정하므로,
+    승패/무승부 판정 정확성은 이 함수의 유닛테스트만으로 검증된다.
+    """
+    winner = check_winner(board)
+    if winner == HUMAN:
+        return 'HUMAN'
+    if winner == ROBOT:
+        return 'ROBOT'
+    if is_draw(board):
+        return 'DRAW'
+    return None
+
+
 def get_empty_cells(board: list[list[int]]) -> list[tuple[int, int]]:
     return [(r, c) for r in range(3) for c in range(3) if board[r][c] == EMPTY]
 

@@ -45,4 +45,8 @@ pick_place_controller:
     # old 0.025 keeps it visible on top of the board instead of settling
     # into the gap beneath it.
     piece_rest_z: 0.05
+    # Matches the world file's initial robot_cube_N supply-line pose (on the
+    # table, not the elevated board) -- used by reset_pieces to teleport
+    # pieces back there for a new game.
+    supply_rest_z: 0.025
     dry_run: false
