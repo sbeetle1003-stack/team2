@@ -135,13 +135,13 @@ Vision-Based Autonomous Tic-Tac-Toe with a ROS2 Manipulator and Gazebo Digital T
 ---
 ## 오후
 - 권신용
-  - 
+  - Game reset, over logic 개발 및 digital twin test, gripper 토크 측정 초기
 - 곽정미
   - 
 - 이명연
-  - 
+  - 좌표 추정 및 변환
 - 주영찬
-  - 
+  - digital twin 개발 및 연동
 - 박미진
   - 
 
