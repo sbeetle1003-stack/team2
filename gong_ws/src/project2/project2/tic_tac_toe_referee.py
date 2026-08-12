@@ -18,7 +18,7 @@ from project2.tic_tac_toe_ai import HUMAN, ROBOT, check_winner, choose_best_move
 BOARD_ORIGIN_X = 0.30
 BOARD_ORIGIN_Y = 0.0
 CELL_SPACING = 0.08
-HUMAN_MARKER_Z = 0.04  # board top surface (~0.035) + marker half-thickness
+HUMAN_MARKER_Z = 0.05  # matches config/manipulation.yaml piece_rest_z for the same thin-cylinder pieces
 HUMAN_MARKER_COUNT = 5
 
 

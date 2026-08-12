@@ -39,5 +39,10 @@ pick_place_controller:
     # Gazebo-only workaround for unsupported gripper mimic constraints.
     # Set false when controlling the real OpenManipulator-X.
     simulate_piece_attachment: true
-    piece_rest_z: 0.025
+    # Pieces are now thin cylinders (radius 0.02, length 0.03), not the old
+    # 0.05 cubes. The board's top surface sits at ~0.035 (base pose z=0.03,
+    # 0.01 thick); resting a piece's center there instead of at the cube's
+    # old 0.025 keeps it visible on top of the board instead of settling
+    # into the gap beneath it.
+    piece_rest_z: 0.05
     dry_run: false
