@@ -56,5 +56,5 @@
 | Pick & Place dry-run | ✅ Working |
 | Gazebo integration | 🚧 In progress |
 | Real manipulator execution | 🚧 Not tested yet |
-| Game reset / undo handling | 🚧 TODO |
-| Game-over logic verification | 🚧 TODO |
+| Game reset / undo handling | 🚧 In progress |
+| Game-over logic verification | 🚧 In progress |
