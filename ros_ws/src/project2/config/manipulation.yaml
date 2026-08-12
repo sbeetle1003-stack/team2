@@ -1,6 +1,6 @@
 pick_place_controller:
   ros__parameters:
-    use_sim_time: true
+    use_sim_time: false
     base_frame: link1
     tool_frame: end_effector_link
 
@@ -36,3 +36,4 @@ pick_place_controller:
     simulate_piece_attachment: true
     piece_rest_z: 0.025
     dry_run: false
+    
