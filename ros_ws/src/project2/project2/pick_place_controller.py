@@ -28,6 +28,7 @@ from tf2_ros.transform_listener import TransformListener
 
 from project2.board_geometry import lookup_cell_pose_in_base
 from project2.manipulation_geometry import cell_center, supply_position
+from project2.robot_description_patches import add_wrist_camera
 
 
 class MotionStageError(RuntimeError):
@@ -159,6 +160,7 @@ class PickPlaceController(Node):
             mappings={'use_sim': 'true'},
         ).toxml()
         robot_root = ET.fromstring(robot_description)
+        add_wrist_camera(robot_root, include_sensor=False)
         camera_link = robot_root.find("./link[@name='camera_link']")
         if camera_link is not None:
             for collision in camera_link.findall('collision'):

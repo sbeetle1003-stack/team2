@@ -21,6 +21,8 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 import xacro
 
+from project2.robot_description_patches import add_wrist_camera
+
 
 def generate_launch_description():
     project_share = get_package_share_directory('project2')
@@ -120,6 +122,12 @@ def generate_launch_description():
         ET.SubElement(plugin, 'output_topic').text = (
             f'/{piece_name}/attachment_state'
         )
+
+    # open_manipulator_description ships no wrist camera; add one here so
+    # it stays a project2-only Gazebo addition rather than a fork of the
+    # shared description package.
+    add_wrist_camera(robot_root, include_sensor=True)
+
     robot_description = ET.tostring(robot_root, encoding='unicode')
 
     robot_state_publisher = Node(
