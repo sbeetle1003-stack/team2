@@ -77,6 +77,9 @@ setup(
             'digital_twin_robot = project2.digital_twin_robot:main',
             'create_aruco_maker = project2.create_aruco_maker:main',
             'manipulation_geometry = project2.manipulation_geometry:main',
+            'board_frame_publisher = project2.board_frame_publisher:main',
+            'gripper_camera_pub = project2.gripper_camera_pub:main',
+            'board_cell_test = project2.board_cell_test:main',
             
         ],
     },

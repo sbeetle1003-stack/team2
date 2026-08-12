@@ -23,7 +23,11 @@ from ros_gz_interfaces.srv import SetEntityPose
 from shape_msgs.msg import SolidPrimitive
 from std_msgs.msg import Empty
 
-from project2.manipulation_geometry import cell_center, supply_position
+from rclpy.duration import Duration
+from tf2_ros import Buffer, TransformListener
+
+from project2.board_geometry import lookup_cell_pose_in_base
+from project2.manipulation_geometry import supply_position
 
 
 class MotionStageError(RuntimeError):
@@ -43,9 +47,10 @@ class PickPlaceController(Node):
 
         self.declare_parameter('base_frame', 'link1')
         self.declare_parameter('tool_frame', 'end_effector_link')
-        self.declare_parameter('board_origin_x', 0.30)
-        self.declare_parameter('board_origin_y', 0.0)
-        self.declare_parameter('cell_spacing', 0.08)
+        self.declare_parameter('board_frame', 'board_frame')
+        self.declare_parameter('camera_frame', 'camera_optical')
+        self.declare_parameter('cell_spacing', 0.05)
+        self.declare_parameter('board_tf_max_age', 5.0)
         self.declare_parameter('supply_x', 0.10)
         self.declare_parameter('supply_y', -0.20)
         self.declare_parameter('supply_spacing', 0.05)
@@ -53,9 +58,9 @@ class PickPlaceController(Node):
         self.declare_parameter('pre_grasp_z', 0.15)
         self.declare_parameter('grasp_z', 0.075)
         self.declare_parameter('lift_z', 0.15)
-        self.declare_parameter('pre_place_z', 0.15)
-        self.declare_parameter('place_z', 0.075)
-        self.declare_parameter('retreat_z', 0.15)
+        self.declare_parameter('pre_place_offset_z', 0.10)
+        self.declare_parameter('place_offset_z', 0.03)
+        self.declare_parameter('retreat_offset_z', 0.10)
         self.declare_parameter('orientation_x', 0.0)
         self.declare_parameter('orientation_y', 0.0)
         self.declare_parameter('orientation_z', 0.0)
@@ -68,9 +73,17 @@ class PickPlaceController(Node):
 
         self.base_frame = self.get_parameter('base_frame').value
         self.tool_frame = self.get_parameter('tool_frame').value
-        self.board_origin_x = self.get_parameter('board_origin_x').value
-        self.board_origin_y = self.get_parameter('board_origin_y').value
+        self.board_frame = self.get_parameter('board_frame').value
+        self.camera_frame = self.get_parameter('camera_frame').value
         self.cell_spacing = self.get_parameter('cell_spacing').value
+        self.board_tf_max_age = float(
+            self.get_parameter('board_tf_max_age').value
+        )
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(
+            self.tf_buffer,
+            self,
+)
         self.supply_x = self.get_parameter('supply_x').value
         self.supply_y = self.get_parameter('supply_y').value
         self.supply_spacing = self.get_parameter('supply_spacing').value
@@ -418,12 +431,52 @@ class PickPlaceController(Node):
 
         try:
             cell_id = int(goal_handle.request.cell_id)
-            target_x, target_y = cell_center(
+
+            cell_pose = lookup_cell_pose_in_base(
+                self.tf_buffer,
                 cell_id,
-                self.board_origin_x,
-                self.board_origin_y,
-                self.cell_spacing,
+                base_frame=self.base_frame,
+                board_frame=self.board_frame,
+                camera_frame=self.camera_frame,
+                cell_spacing=self.cell_spacing,
+                now=self.get_clock().now(),
+                max_age=Duration(seconds=self.board_tf_max_age),
+                timeout=Duration(seconds=0.2),
             )
+
+            if cell_pose is None:
+                raise RuntimeError(
+                    f'Cell {cell_id}의 board TF 좌표를 얻지 못했습니다.'
+                )
+
+            target_x = cell_pose.pose.position.x
+            target_y = cell_pose.pose.position.y
+            board_z = cell_pose.pose.position.z
+
+            pre_place_z = (
+                board_z
+                + self.get_parameter('pre_place_offset_z').value
+            )
+
+            place_z = (
+                board_z
+                + self.get_parameter('place_offset_z').value
+            )
+
+            retreat_z = (
+                board_z
+                + self.get_parameter('retreat_offset_z').value
+            )
+
+            self.get_logger().info(
+                f'Cell {cell_id} TF target: '
+                f'x={target_x:.4f}, '
+                f'y={target_y:.4f}, '
+                f'board_z={board_z:.4f}, '
+                f'pre_place_z={pre_place_z:.4f}, '
+                f'place_z={place_z:.4f}'
+            )
+
             pick_x, pick_y = supply_position(
                 self.next_piece_index,
                 self.supply_x,
@@ -432,30 +485,14 @@ class PickPlaceController(Node):
             )
 
             stages = [
-                ('OPEN_GRIPPER', 5.0, lambda: self._move_named(
-                    self.gripper, 'open', 'OPEN_GRIPPER')),
-                ('PRE_GRASP', 15.0, lambda: self._move_arm(
-                    'PRE_GRASP', self._pose(pick_x, pick_y,
-                                            self.get_parameter('pre_grasp_z').value))),
-                ('GRASP_APPROACH', 30.0, lambda: self._move_arm(
-                    'GRASP_APPROACH', self._pose(pick_x, pick_y,
-                                                self.get_parameter('grasp_z').value))),
-                ('CLOSE_GRIPPER', 40.0, lambda: self._close_and_attach(
-                    self.next_piece_index)),
-                ('LIFT', 52.0, lambda: self._move_arm(
-                    'LIFT', self._pose(pick_x, pick_y,
-                                      self.get_parameter('lift_z').value))),
                 ('PRE_PLACE', 68.0, lambda: self._move_arm(
-                    'PRE_PLACE', self._pose(target_x, target_y,
-                                           self.get_parameter('pre_place_z').value))),
-                ('PLACE', 80.0, lambda: self._move_arm(
-                    'PLACE', self._pose(target_x, target_y,
-                                       self.get_parameter('place_z').value))),
-                ('RELEASE', 86.0, lambda: self._open_and_detach(
-                    self.next_piece_index, target_x, target_y)),
-                ('RETREAT', 94.0, lambda: self._move_arm(
-                    'RETREAT', self._pose(target_x, target_y,
-                                         self.get_parameter('retreat_z').value))),
+                    'PRE_PLACE',
+                    self._pose(
+                        target_x,
+                        target_y,
+                        pre_place_z,
+                    ),
+                )),
             ]
 
             for stage, progress, operation in stages:
@@ -470,7 +507,11 @@ class PickPlaceController(Node):
                     holding_piece = False
 
             if self.return_home:
-                self._feedback(goal_handle, 'RETURN_HOME', 98.0)
+                self._feedback(
+                    goal_handle,
+                    'RETURN_BOARD_VIEW',
+                    98.0,
+                )
                 self._move_named(
                     self.arm,
                     'board_view',

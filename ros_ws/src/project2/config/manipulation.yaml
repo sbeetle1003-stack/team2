@@ -7,7 +7,7 @@ pick_place_controller:
     # Board center and row-major 3x3 spacing in the robot base frame.
     board_origin_x: 0.30
     board_origin_y: 0.0
-    cell_spacing: 0.08
+    cell_spacing: 0.05
 
     # Five robot pieces are arranged from left to right at the supply line.
     supply_x: 0.10
@@ -18,10 +18,10 @@ pick_place_controller:
     # Tune these heights after checking the real gripper/tool offset.
     pre_grasp_z: 0.15
     grasp_z: 0.075
-    lift_z: 0.15
-    pre_place_z: 0.15
-    place_z: 0.075
-    retreat_z: 0.15
+    lift_z: 0.13
+    pre_place_offset_z: 0.10
+    place_offset_z: 0.03
+    retreat_offset_z: 0.10
 
     # OpenManipulator-X tutorial-compatible default orientation.
     orientation_x: 0.0
