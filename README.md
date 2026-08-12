@@ -130,7 +130,7 @@ Vision-Based Autonomous Tic-Tac-Toe with a ROS2 Manipulator and Gazebo Digital T
 - 주영찬
   - digital twin 오류 수정 및 개발
 - 박미진
-  - 
+  - 게임용 말 생성, world 파일 수정
 
 
 ---
@@ -145,7 +145,7 @@ Vision-Based Autonomous Tic-Tac-Toe with a ROS2 Manipulator and Gazebo Digital T
 - 주영찬
   - digital twin 개발 및 연동
 - 박미진
-  - 
+  - digital_twin 파일 수정, xo_mark.sdf
 
 - 금일 목표과제
 
