@@ -10,6 +10,8 @@
        A PC             B PC           C PC
     team2/ros_ws    team2/ros_ws    team2/ros_ws
 
+> [!WARNING]
+> 워크스페이스 통합 가이드 참조, 브랜치 통합 진행
 
 현재 프로젝트는 기능별 브랜치에서 개발한 뒤 통합 브랜치에서 연결 및 테스트하는 방식으로 진행
 
