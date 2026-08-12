@@ -41,6 +41,14 @@ data_files = [
         os.path.join('share', package_name, 'models', 'textures'), 
         glob('models/textures/*')
     ),
+    (
+        os.path.join('share', package_name, 'world'),
+        glob('world/*.sdf'),
+    ),
+    (
+        os.path.join('share', package_name, 'models'),
+        glob('models/*.sdf'),
+    ),
 ]
 data_files.extend(collect_data_files('world'))
 data_files.extend(collect_data_files('models'))
