@@ -1,6 +1,32 @@
 <?xml version="1.0" ?>
 <sdf version="1.8">
   <world name="tictactoe_world">
+
+    <!-- gz-sim only auto-loads its implicit default systems (Physics,
+         SceneBroadcaster, UserCommands, Contact, ...) when a world
+         declares NO <plugin> tags at all. Adding the Sensors plugin below
+         (needed for camera rendering under LIBGL_ALWAYS_SOFTWARE=1) opts
+         the whole world out of those implicit defaults, so every system
+         actually in use has to be listed explicitly here too -- otherwise
+         SceneBroadcaster never starts and the GUI has no scene to draw. -->
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"></plugin>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"></plugin>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"></plugin>
+    <plugin filename="gz-sim-contact-system" name="gz::sim::systems::Contact"></plugin>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <!-- Default GUI view: positioned beyond the board (away from the
+         robot base along +X), facing back toward -X so the scene opens
+         on the robot's front (where the board/reach direction is) instead
+         of a side view. Orbit with the mouse in the GUI if you want a
+         different angle; this only sets what you see on launch. -->
+    <gui fullscreen="false">
+      <camera name="user_camera">
+        <pose>0.80 0 0.45 0 0.6 3.14159</pose>
+      </camera>
+    </gui>
     
     <light name="sun" type="directional">
       <pose>0 0 10 0 0 0</pose>
@@ -309,220 +335,37 @@
       <pose>0.30 -0.20 0.025 0 0 0</pose>
     </include>
 
-    <!-- Human pieces are arranged on the opposite side of the board. -->
+    <!-- Human's red O markers park on the opposite side of the board.
+         Human moves never move the arm: game code teleports these onto the
+         played cell via the /world/tictactoe_world/set_pose service. -->
     <include>
-      <uri>model://aruco_cube_11</uri>
-      <name>human_cube_11</name>
+      <uri>model://human_marker_o</uri>
+      <name>human_marker_0</name>
       <pose>0.10 0.20 0.025 0 0 0</pose>
     </include>
     <include>
-      <uri>model://aruco_cube_12</uri>
-      <name>human_cube_12</name>
+      <uri>model://human_marker_o</uri>
+      <name>human_marker_1</name>
       <pose>0.15 0.20 0.025 0 0 0</pose>
     </include>
     <include>
-      <uri>model://aruco_cube_13</uri>
-      <name>human_cube_13</name>
+      <uri>model://human_marker_o</uri>
+      <name>human_marker_2</name>
       <pose>0.20 0.20 0.025 0 0 0</pose>
     </include>
     <include>
-      <uri>model://aruco_cube_14</uri>
-      <name>human_cube_14</name>
+      <uri>model://human_marker_o</uri>
+      <name>human_marker_3</name>
       <pose>0.25 0.20 0.025 0 0 0</pose>
     </include>
     <include>
-      <uri>model://aruco_cube_15</uri>
-      <name>human_cube_15</name>
+      <uri>model://human_marker_o</uri>
+      <name>human_marker_4</name>
       <pose>0.30 0.20 0.025 0 0 0</pose>
     </include>
-
   </world>
 </sdf>
 
 
 
 
-<!-- <?xml version="1.0" ?>
-<sdf version="1.8">
-  <world name="tictactoe_world">
-    
-    <light name="sun" type="directional">
-      <pose>0 0 10 0 0 0</pose>
-      <cast_shadows>true</cast_shadows>
-      <diffuse>0.8 0.8 0.8 1</diffuse>
-      <specular>0.2 0.2 0.2 1</specular>
-      <direction>-0.5 0.1 -0.9</direction>
-    </light>
-
-    <model name="ground_plane">
-      <static>true</static>
-      <link name="link">
-        <collision name="collision">
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>100 100</size>
-            </plane>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>100 100</size>
-            </plane>
-          </geometry>
-          <material>
-            <ambient>0.8 0.8 0.8 1</ambient>
-            <diffuse>0.8 0.8 0.8 1</diffuse>
-            <specular>0.8 0.8 0.8 1</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="tictactoe_table">
-      <static>true</static>
-      <pose>0.3 0.0 -0.025 0 0 0</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.8 0.8 0.05</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.8 0.8 0.05</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.6 0.4 0.2 1</ambient>
-            <diffuse>0.6 0.4 0.2 1</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="tictactoe_board">
-      <static>true</static>
-      <pose>0.3 0.0 0.03 0 0 0</pose>
-      
-      <link name="base_link">
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.3 0.3 0.01</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.3 0.3 0.01</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.1 0.5 0.9 1</ambient>
-            <diffuse>0.1 0.5 0.9 1</diffuse>
-          </material>
-        </visual>
-      </link>
-
-      <link name="v_line_1">
-        <pose>-0.05 0 0.006 0 0 0</pose>
-        <visual name="visual">
-          <geometry><box><size>0.008 0.28 0.003</size></box></geometry>
-          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse></material>
-        </visual>
-      </link>
-
-      <link name="v_line_2">
-        <pose>0.05 0 0.006 0 0 0</pose>
-        <visual name="visual">
-          <geometry><box><size>0.008 0.28 0.003</size></box></geometry>
-          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse></material>
-        </visual>
-      </link>
-
-      <link name="h_line_1">
-        <pose>0 -0.05 0.006 0 0 0</pose>
-        <visual name="visual">
-          <geometry><box><size>0.28 0.008 0.003</size></box></geometry>
-          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse></material>
-        </visual>
-      </link>
-
-      <link name="h_line_2">
-        <pose>0 0.05 0.006 0 0 0</pose>
-        <visual name="visual">
-          <geometry><box><size>0.28 0.008 0.003</size></box></geometry>
-          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_6</uri>
-      <name>robot_cube_6</name>
-      <pose>0.10 -0.2 0.045 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_7</uri>
-      <name>robot_cube_7</name>
-      <pose>0.15 -0.2 0.045 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_8</uri>
-      <name>robot_cube_8</name>
-      <pose>0.20 -0.2 0.045 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_9</uri>
-      <name>robot_cube_9</name>
-      <pose>0.25 -0.2 0.045 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_10</uri>
-      <name>robot_cube_10</name>
-      <pose>0.30 -0.2 0.045 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_11</uri>
-      <name>human_cube_11</name>
-      <pose>0.10 0.2 0.045 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_12</uri>
-      <name>human_cube_12</name>
-      <pose>0.15 0.2 0.045 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_13</uri>
-      <name>human_cube_13</name>
-      <pose>0.20 0.2 0.045 0 0 0</pose>
-    </include>
-    
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_14</uri>
-      <name>human_cube_14</name>
-      <pose>0.25 0.2 0.045 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_15</uri>
-      <name>human_cube_15</name>
-      <pose>0.30 0.2 0.045 0 0 0</pose>
-    </include>
-
-  </world>
-</sdf> -->

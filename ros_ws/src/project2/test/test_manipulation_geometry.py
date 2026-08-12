@@ -4,9 +4,13 @@ from project2.manipulation_geometry import cell_center, supply_position
 
 
 def test_cell_centers_are_row_major():
-    assert cell_center(0, 0.30, 0.0, 0.08) == pytest.approx((0.22, 0.08))
+    # Row maps to x (row 1 near the robot/small x, row 3 near the human/
+    # large x); column maps to y (column 1 on the human's left/-y, column 3
+    # on the human's right/+y). See empty_world.sdf's default GUI camera,
+    # which stands beyond the board facing -x back at the robot.
+    assert cell_center(0, 0.30, 0.0, 0.08) == pytest.approx((0.22, -0.08))
     assert cell_center(4, 0.30, 0.0, 0.08) == pytest.approx((0.30, 0.0))
-    assert cell_center(8, 0.30, 0.0, 0.08) == pytest.approx((0.38, -0.08))
+    assert cell_center(8, 0.30, 0.0, 0.08) == pytest.approx((0.38, 0.08))
 
 
 def test_cell_id_range_is_checked():

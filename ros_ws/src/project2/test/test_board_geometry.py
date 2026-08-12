@@ -8,9 +8,11 @@ from project2.board_geometry import cell_offset, lookup_cell_pose_in_base
 
 
 def test_cell_offsets_are_row_major():
-    assert cell_offset(0, 0.08) == pytest.approx((-0.08, 0.08))
+    # Matches manipulation_geometry.cell_center()'s convention: row maps to
+    # x, column maps to y.
+    assert cell_offset(0, 0.08) == pytest.approx((-0.08, -0.08))
     assert cell_offset(4, 0.08) == pytest.approx((0.0, 0.0))
-    assert cell_offset(8, 0.08) == pytest.approx((0.08, -0.08))
+    assert cell_offset(8, 0.08) == pytest.approx((0.08, 0.08))
 
 
 def test_cell_id_range_is_checked():

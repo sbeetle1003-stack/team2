@@ -57,6 +57,30 @@ def test_is_draw_false_when_winner_exists():
     assert is_draw(board) is False
 
 
+def test_is_draw_true_early_when_one_cell_left_but_undecidable():
+    """빈 칸이 1개 남아도, 그 칸이 어느 줄도 완성시킬 수 없으면 조기 무승부."""
+    board = [
+        [EMPTY, HUMAN, ROBOT],
+        [ROBOT, HUMAN, HUMAN],
+        [HUMAN, ROBOT, ROBOT],
+    ]
+    assert check_winner(board) is None
+    assert is_draw(board) is True
+    assert is_game_over(board) is True
+    assert choose_best_move(board) is None
+
+
+def test_is_draw_false_when_two_cells_left_and_still_winnable():
+    """빈 칸이 2개 이상 남으면 항상 어느 한쪽에게는 아직 이길 가능성이 있다."""
+    board = [
+        [HUMAN, ROBOT, EMPTY],
+        [EMPTY, HUMAN, ROBOT],
+        [ROBOT, HUMAN, EMPTY],
+    ]
+    assert check_winner(board) is None
+    assert is_draw(board) is False
+
+
 def test_is_valid_move():
     board = empty_board()
     board[1][1] = ROBOT

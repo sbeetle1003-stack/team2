@@ -9,12 +9,19 @@ TF_LOOKUP_ERRORS = (LookupException, ConnectivityException, ExtrapolationExcepti
 
 
 def cell_offset(cell_id, cell_spacing):
-    """Return the board-frame-relative (x, y) center of a row-major cell index."""
+    """Return the board-frame-relative (x, y) center of a row-major cell index.
+
+    Mirrors manipulation_geometry.cell_center()'s convention with the board
+    origin at (0, 0): row maps to x, column maps to y. This assumes
+    board_frame's local +x/+y axes are aligned with base_frame's (see
+    board_frame_publisher's board_marker_yaw_offset if the physical marker
+    mounting turns out not to match that).
+    """
     if not 0 <= cell_id <= 8:
         raise ValueError('cell_id must be between 0 and 8')
     row, column = divmod(cell_id, 3)
-    x = (column - 1) * cell_spacing
-    y = (1 - row) * cell_spacing
+    x = (row - 1) * cell_spacing
+    y = (column - 1) * cell_spacing
     return x, y
 
 
