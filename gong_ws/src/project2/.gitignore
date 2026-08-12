@@ -1,0 +1,17 @@
+# ROS 2 빌드 결과물
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# 임시 파일
+*.swp
+*~

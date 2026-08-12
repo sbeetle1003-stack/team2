@@ -1,5 +1,6 @@
 <?xml version="1.0" ?>
 <sdf version="1.8">
+
   <world name="tictactoe_world">
     
     <light name="sun" type="directional">
@@ -96,7 +97,7 @@
             <diffuse>1 1 1 1</diffuse>
             <pbr>
               <metal>
-                <albedo_map>model://project2/models/textures/aruco_0.png</albedo_map>
+                <albedo_map>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/textures/aruco_marker_0.png</albedo_map>
                 <roughness>1.0</roughness>
                 <metalness>0.0</metalness>
               </metal>
@@ -114,7 +115,7 @@
             <diffuse>1 1 1 1</diffuse>
             <pbr>
               <metal>
-                <albedo_map>model://project2/models/textures/aruco_1.png</albedo_map>
+                <albedo_map>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/textures/aruco_marker_1.png</albedo_map>
                 <roughness>1.0</roughness>
                 <metalness>0.0</metalness>
               </metal>
@@ -132,7 +133,7 @@
             <diffuse>1 1 1 1</diffuse>
             <pbr>
               <metal>
-                <albedo_map>model://project2/models/textures/aruco_2.png</albedo_map>
+                <albedo_map>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/textures/aruco_marker_2.png</albedo_map>
                 <roughness>1.0</roughness>
                 <metalness>0.0</metalness>
               </metal>
@@ -150,7 +151,7 @@
             <diffuse>1 1 1 1</diffuse>
             <pbr>
               <metal>
-                <albedo_map>model://project2/models/textures/aruco_3.png</albedo_map>
+                <albedo_map>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/textures/aruco_marker_3.png</albedo_map>
                 <roughness>1.0</roughness>
                 <metalness>0.0</metalness>
               </metal>
@@ -168,7 +169,7 @@
             <diffuse>1 1 1 1</diffuse>
             <pbr>
               <metal>
-                <albedo_map>model://project2/models/textures/aruco_4.png</albedo_map>
+                <albedo_map>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/textures/aruco_marker_4.png</albedo_map>
                 <roughness>1.0</roughness>
                 <metalness>0.0</metalness>
               </metal>
@@ -186,7 +187,7 @@
             <diffuse>1 1 1 1</diffuse>
             <pbr>
               <metal>
-                <albedo_map>model://project2/models/textures/aruco_5.png</albedo_map>
+                <albedo_map>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/textures/aruco_marker_5.png</albedo_map>
                 <roughness>1.0</roughness>
                 <metalness>0.0</metalness>
               </metal>
@@ -204,7 +205,7 @@
             <diffuse>1 1 1 1</diffuse>
             <pbr>
               <metal>
-                <albedo_map>model://project2/models/textures/aruco_6.png</albedo_map>
+                <albedo_map>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/textures/aruco_marker_6.png</albedo_map>
                 <roughness>1.0</roughness>
                 <metalness>0.0</metalness>
               </metal>
@@ -222,7 +223,7 @@
             <diffuse>1 1 1 1</diffuse>
             <pbr>
               <metal>
-                <albedo_map>model://project2/models/textures/aruco_7.png</albedo_map>
+                <albedo_map>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/textures/aruco_marker_7.png</albedo_map>
                 <roughness>1.0</roughness>
                 <metalness>0.0</metalness>
               </metal>
@@ -240,7 +241,7 @@
             <diffuse>1 1 1 1</diffuse>
             <pbr>
               <metal>
-                <albedo_map>model://project2/models/textures/aruco_8.png</albedo_map>
+                <albedo_map>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/textures/aruco_marker_8.png</albedo_map>
                 <roughness>1.0</roughness>
                 <metalness>0.0</metalness>
               </metal>
@@ -280,195 +281,309 @@
           <material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.2 0.2 0.2 1</diffuse></material>
         </visual>
       </link>
-    </model>
+    </model>  
+    
+    <!-- ROBOT 게임 말 공급대 -->
+<model name="robot_piece_supply">
+  <static>true</static>
+
+  <!-- 게임판 오른쪽 바깥 -->
+  <pose>0.52 -0.20 0.01 0 0 0</pose>
+
+  <link name="link">
+    <collision name="collision">
+      <geometry>
+        <box>
+          <size>0.18 0.08 0.02</size>
+        </box>
+      </geometry>
+    </collision>
+
+    <visual name="visual">
+      <geometry>
+        <box>
+          <size>0.18 0.08 0.02</size>
+        </box>
+      </geometry>
+
+      <material>
+        <ambient>0.15 0.15 0.15 1</ambient>
+        <diffuse>0.15 0.15 0.15 1</diffuse>
+      </material>
+    </visual>
+  </link>
+</model>
+
+<!-- ROBOT용 파란색 게임 말 0 -->
+<model name="robot_piece_0">
+  <pose>0.46 -0.20 0.045 0 0 0</pose>
+
+  <link name="link">
+    <inertial>
+      <mass>0.02</mass>
+
+      <inertia>
+        <ixx>0.000002</ixx>
+        <iyy>0.000002</iyy>
+        <izz>0.000004</izz>
+      </inertia>
+    </inertial>
+
+    <collision name="collision">
+      <geometry>
+        <cylinder>
+          <radius>0.02</radius>
+          <length>0.03</length>
+        </cylinder>
+      </geometry>
+    </collision>
+
+    <visual name="visual">
+      <geometry>
+        <cylinder>
+          <radius>0.02</radius>
+          <length>0.03</length>
+        </cylinder>
+      </geometry>
+
+      <material>
+        <ambient>0.05 0.15 0.9 1</ambient>
+        <diffuse>0.05 0.15 0.9 1</diffuse>
+      </material>
+    </visual>
+  </link>
+</model>
+
+<!-- ROBOT용 파란색 게임 말 1 -->
+<model name="robot_piece_1">
+  <pose>0.52 -0.20 0.045 0 0 0</pose>
+
+  <link name="link">
+    <inertial>
+      <mass>0.02</mass>
+
+      <inertia>
+        <ixx>0.000002</ixx>
+        <iyy>0.000002</iyy>
+        <izz>0.000004</izz>
+      </inertia>
+    </inertial>
+
+    <collision name="collision">
+      <geometry>
+        <cylinder>
+          <radius>0.02</radius>
+          <length>0.03</length>
+        </cylinder>
+      </geometry>
+    </collision>
+
+    <visual name="visual">
+      <geometry>
+        <cylinder>
+          <radius>0.02</radius>
+          <length>0.03</length>
+        </cylinder>
+      </geometry>
+
+      <material>
+        <ambient>0.05 0.15 0.9 1</ambient>
+        <diffuse>0.05 0.15 0.9 1</diffuse>
+      </material>
+    </visual>
+  </link>
+</model>
+
+<!-- ROBOT용 파란색 게임 말 2 -->
+<model name="robot_piece_2">
+  <pose>0.58 -0.20 0.045 0 0 0</pose>
+
+  <link name="link">
+    <inertial>
+      <mass>0.02</mass>
+
+      <inertia>
+        <ixx>0.000002</ixx>
+        <iyy>0.000002</iyy>
+        <izz>0.000004</izz>
+      </inertia>
+    </inertial>
+
+    <collision name="collision">
+      <geometry>
+        <cylinder>
+          <radius>0.02</radius>
+          <length>0.03</length>
+        </cylinder>
+      </geometry>
+    </collision>
+
+    <visual name="visual">
+      <geometry>
+        <cylinder>
+          <radius>0.02</radius>
+          <length>0.03</length>
+        </cylinder>
+      </geometry>
+
+      <material>
+        <ambient>0.05 0.15 0.9 1</ambient>
+        <diffuse>0.05 0.15 0.9 1</diffuse>
+      </material>
+    </visual>
+  </link>
+</model>
+
+<!-- HUMAN 게임 말 공급대 -->
+<model name="human_piece_supply">
+  <static>true</static>
+  <pose>0.08 0.20 0.01 0 0 0</pose>
+
+  <link name="link">
+    <collision name="collision">
+      <geometry>
+        <box>
+          <size>0.18 0.08 0.02</size>
+        </box>
+      </geometry>
+    </collision>
+
+    <visual name="visual">
+      <geometry>
+        <box>
+          <size>0.18 0.08 0.02</size>
+        </box>
+      </geometry>
+
+      <material>
+        <ambient>0.15 0.15 0.15 1</ambient>
+        <diffuse>0.15 0.15 0.15 1</diffuse>
+      </material>
+    </visual>
+  </link>
+</model>
+
+<!-- HUMAN용 빨간색 게임 말 0 -->
+<model name="human_piece_0">
+  <pose>0.02 0.20 0.045 0 0 0</pose>
+
+  <link name="link">
+    <inertial>
+      <mass>0.02</mass>
+
+      <inertia>
+        <ixx>0.000002</ixx>
+        <iyy>0.000002</iyy>
+        <izz>0.000004</izz>
+      </inertia>
+    </inertial>
+
+    <collision name="collision">
+      <geometry>
+        <cylinder>
+          <radius>0.02</radius>
+          <length>0.03</length>
+        </cylinder>
+      </geometry>
+    </collision>
+
+    <visual name="visual">
+      <geometry>
+        <cylinder>
+          <radius>0.02</radius>
+          <length>0.03</length>
+        </cylinder>
+      </geometry>
+
+      <material>
+        <ambient>0.9 0.05 0.05 1</ambient>
+        <diffuse>0.9 0.05 0.05 1</diffuse>
+      </material>
+    </visual>
+  </link>
+</model>
+
+<!-- HUMAN용 빨간색 게임 말 1 -->
+<model name="human_piece_1">
+  <pose>0.08 0.20 0.045 0 0 0</pose>
+
+  <link name="link">
+    <inertial>
+      <mass>0.02</mass>
+
+      <inertia>
+        <ixx>0.000002</ixx>
+        <iyy>0.000002</iyy>
+        <izz>0.000004</izz>
+      </inertia>
+    </inertial>
+
+    <collision name="collision">
+      <geometry>
+        <cylinder>
+          <radius>0.02</radius>
+          <length>0.03</length>
+        </cylinder>
+      </geometry>
+    </collision>
+
+    <visual name="visual">
+      <geometry>
+        <cylinder>
+          <radius>0.02</radius>
+          <length>0.03</length>
+        </cylinder>
+      </geometry>
+
+      <material>
+        <ambient>0.9 0.05 0.05 1</ambient>
+        <diffuse>0.9 0.05 0.05 1</diffuse>
+      </material>
+    </visual>
+  </link>
+</model>
+
+<!-- HUMAN용 빨간색 게임 말 2 -->
+<model name="human_piece_2">
+  <pose>0.14 0.20 0.045 0 0 0</pose>
+
+  <link name="link">
+    <inertial>
+      <mass>0.02</mass>
+
+      <inertia>
+        <ixx>0.000002</ixx>
+        <iyy>0.000002</iyy>
+        <izz>0.000004</izz>
+      </inertia>
+    </inertial>
+
+    <collision name="collision">
+      <geometry>
+        <cylinder>
+          <radius>0.02</radius>
+          <length>0.03</length>
+        </cylinder>
+      </geometry>
+    </collision>
+
+    <visual name="visual">
+      <geometry>
+        <cylinder>
+          <radius>0.02</radius>
+          <length>0.03</length>
+        </cylinder>
+      </geometry>
+
+      <material>
+        <ambient>0.9 0.05 0.05 1</ambient>
+        <diffuse>0.9 0.05 0.05 1</diffuse>
+      </material>
+    </visual>
+  </link>
+</model>
+
+
 
   </world>
 </sdf>
-
-
-
-
-<!-- <?xml version="1.0" ?>
-<sdf version="1.8">
-  <world name="tictactoe_world">
-    
-    <light name="sun" type="directional">
-      <pose>0 0 10 0 0 0</pose>
-      <cast_shadows>true</cast_shadows>
-      <diffuse>0.8 0.8 0.8 1</diffuse>
-      <specular>0.2 0.2 0.2 1</specular>
-      <direction>-0.5 0.1 -0.9</direction>
-    </light>
-
-    <model name="ground_plane">
-      <static>true</static>
-      <link name="link">
-        <collision name="collision">
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>100 100</size>
-            </plane>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>100 100</size>
-            </plane>
-          </geometry>
-          <material>
-            <ambient>0.8 0.8 0.8 1</ambient>
-            <diffuse>0.8 0.8 0.8 1</diffuse>
-            <specular>0.8 0.8 0.8 1</specular>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="tictactoe_table">
-      <static>true</static>
-      <pose>0.3 0.0 -0.025 0 0 0</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.8 0.8 0.05</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.8 0.8 0.05</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.6 0.4 0.2 1</ambient>
-            <diffuse>0.6 0.4 0.2 1</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <model name="tictactoe_board">
-      <static>true</static>
-      <pose>0.3 0.0 0.03 0 0 0</pose>
-      
-      <link name="base_link">
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.3 0.3 0.01</size>
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.3 0.3 0.01</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>0.1 0.5 0.9 1</ambient>
-            <diffuse>0.1 0.5 0.9 1</diffuse>
-          </material>
-        </visual>
-      </link>
-
-      <link name="v_line_1">
-        <pose>-0.05 0 0.006 0 0 0</pose>
-        <visual name="visual">
-          <geometry><box><size>0.008 0.28 0.003</size></box></geometry>
-          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse></material>
-        </visual>
-      </link>
-
-      <link name="v_line_2">
-        <pose>0.05 0 0.006 0 0 0</pose>
-        <visual name="visual">
-          <geometry><box><size>0.008 0.28 0.003</size></box></geometry>
-          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse></material>
-        </visual>
-      </link>
-
-      <link name="h_line_1">
-        <pose>0 -0.05 0.006 0 0 0</pose>
-        <visual name="visual">
-          <geometry><box><size>0.28 0.008 0.003</size></box></geometry>
-          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse></material>
-        </visual>
-      </link>
-
-      <link name="h_line_2">
-        <pose>0 0.05 0.006 0 0 0</pose>
-        <visual name="visual">
-          <geometry><box><size>0.28 0.008 0.003</size></box></geometry>
-          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_6</uri>
-      <name>robot_cube_6</name>
-      <pose>0.10 -0.2 0.045 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_7</uri>
-      <name>robot_cube_7</name>
-      <pose>0.15 -0.2 0.045 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_8</uri>
-      <name>robot_cube_8</name>
-      <pose>0.20 -0.2 0.045 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_9</uri>
-      <name>robot_cube_9</name>
-      <pose>0.25 -0.2 0.045 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_10</uri>
-      <name>robot_cube_10</name>
-      <pose>0.30 -0.2 0.045 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_11</uri>
-      <name>human_cube_11</name>
-      <pose>0.10 0.2 0.045 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_12</uri>
-      <name>human_cube_12</name>
-      <pose>0.15 0.2 0.045 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_13</uri>
-      <name>human_cube_13</name>
-      <pose>0.20 0.2 0.045 0 0 0</pose>
-    </include>
-    
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_14</uri>
-      <name>human_cube_14</name>
-      <pose>0.25 0.2 0.045 0 0 0</pose>
-    </include>
-
-    <include>
-      <uri>/home/boyfriend51/temp/gong/gong_ws/src/project2/models/aruco_cube_15</uri>
-      <name>human_cube_15</name>
-      <pose>0.30 0.2 0.045 0 0 0</pose>
-    </include>
-
-  </world>
-</sdf> -->
