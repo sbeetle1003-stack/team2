@@ -77,8 +77,7 @@
   - team git Repositories 생성
   - 계획서 제출
 
-
-
+<br>
 
 
 # 2026-08-11(2일차)
@@ -123,10 +122,10 @@ Vision-Based Autonomous Tic-Tac-Toe with a ROS2 Manipulator and Gazebo Digital T
 
 
 
-## 2026-08-12(3일차)
+# 2026-08-12(3일차)
 
 ---
-#오전
+## 오전
 - 권신용
   - 
 - 곽정미
@@ -140,7 +139,7 @@ Vision-Based Autonomous Tic-Tac-Toe with a ROS2 Manipulator and Gazebo Digital T
 
 
 ---
-#오후
+## 오후
 - 권신용
   - 
 - 곽정미
