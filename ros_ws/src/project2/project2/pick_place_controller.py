@@ -16,13 +16,17 @@ from moveit_msgs.msg import CollisionObject
 from project2_interfaces.action import PlacePiece
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.duration import Duration
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from ros_gz_interfaces.msg import Entity
 from ros_gz_interfaces.srv import SetEntityPose
 from shape_msgs.msg import SolidPrimitive
 from std_msgs.msg import Empty
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
 
+from project2.board_geometry import lookup_cell_pose_in_base
 from project2.manipulation_geometry import cell_center, supply_position
 
 
@@ -65,6 +69,10 @@ class PickPlaceController(Node):
         self.declare_parameter('simulate_piece_attachment', True)
         self.declare_parameter('piece_rest_z', 0.025)
         self.declare_parameter('dry_run', False)
+        self.declare_parameter('use_vision_board_frame', False)
+        self.declare_parameter('board_frame_id', 'board_frame')
+        self.declare_parameter('camera_optical_frame', 'camera_optical')
+        self.declare_parameter('board_frame_max_age_sec', 2.0)
 
         self.base_frame = self.get_parameter('base_frame').value
         self.tool_frame = self.get_parameter('tool_frame').value
@@ -80,6 +88,19 @@ class PickPlaceController(Node):
         self.simulate_piece_attachment = self.get_parameter(
             'simulate_piece_attachment'
         ).value
+        self.use_vision_board_frame = self.get_parameter(
+            'use_vision_board_frame'
+        ).value
+        self.board_frame_id = self.get_parameter('board_frame_id').value
+        self.camera_optical_frame = self.get_parameter(
+            'camera_optical_frame'
+        ).value
+        self.board_frame_max_age = Duration(
+            seconds=self.get_parameter('board_frame_max_age_sec').value
+        )
+
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
 
         self.orientation = (
             self.get_parameter('orientation_x').value,
@@ -332,6 +353,29 @@ class PickPlaceController(Node):
         if self.simulate_piece_attachment:
             self._set_piece_pose(piece_index, target_x, target_y)
 
+    def _resolve_cell_target(self, cell_id):
+        """Prefer the vision-derived board_frame; fall back to board_origin_x/y."""
+        if self.use_vision_board_frame:
+            cell_pose = lookup_cell_pose_in_base(
+                self.tf_buffer,
+                cell_id,
+                base_frame=self.base_frame,
+                board_frame=self.board_frame_id,
+                camera_frame=self.camera_optical_frame,
+                cell_spacing=self.cell_spacing,
+                now=self.get_clock().now(),
+                max_age=self.board_frame_max_age,
+            )
+            if cell_pose is not None:
+                return cell_pose.pose.position.x, cell_pose.pose.position.y
+            self.get_logger().warning(
+                'board_frame을 최근에 인식하지 못해 고정 board_origin 값으로 '
+                '대체합니다.'
+            )
+        return cell_center(
+            cell_id, self.board_origin_x, self.board_origin_y, self.cell_spacing,
+        )
+
     def _pose(self, x, y, z):
         pose = PoseStamped()
         pose.header.frame_id = self.base_frame
@@ -418,12 +462,7 @@ class PickPlaceController(Node):
 
         try:
             cell_id = int(goal_handle.request.cell_id)
-            target_x, target_y = cell_center(
-                cell_id,
-                self.board_origin_x,
-                self.board_origin_y,
-                self.cell_spacing,
-            )
+            target_x, target_y = self._resolve_cell_target(cell_id)
             pick_x, pick_y = supply_position(
                 self.next_piece_index,
                 self.supply_x,

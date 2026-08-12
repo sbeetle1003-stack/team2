@@ -249,6 +249,13 @@ def generate_launch_description():
         condition=IfCondition(start_vision),
     )
 
+    board_frame_publisher = Node(
+        package='project2',
+        executable='board_frame_publisher',
+        output='screen',
+        condition=IfCondition(start_vision),
+    )
+
     referee = TimerAction(
         period=6.0,
         actions=[
@@ -273,6 +280,7 @@ def generate_launch_description():
             moveit,
             pick_place_controller,
             vision,
+            board_frame_publisher,
             referee,
         ]
         + controller_startup

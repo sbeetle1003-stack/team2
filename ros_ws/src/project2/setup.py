@@ -58,6 +58,7 @@ setup(
         'console_scripts': [
             'aruco_tf_publisher = project2.aruco_tf_publisher:main',
             'multi_aruco_tf_sub = project2.multi_aruco_tf_sub:main',
+            'board_frame_publisher = project2.board_frame_publisher:main',
             'pick_place_controller = project2.pick_place_controller:main',
             'tic_tac_toe_referee = project2.tic_tac_toe_referee:main',
             'tic_tac_toe_manual_test = project2.tic_tac_toe_manual_test:main',

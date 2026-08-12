@@ -29,6 +29,15 @@ pick_place_controller:
     orientation_z: 0.0
     orientation_w: 1.0
 
+    # Vision-based board frame (coordinate estimation). When enabled, each
+    # placement looks up board_frame (see board_frame_publisher) instead of
+    # using board_origin_x/y above; falls back to the fixed origin if the
+    # marker has not been seen within board_frame_max_age_sec.
+    use_vision_board_frame: false
+    board_frame_id: board_frame
+    camera_optical_frame: camera_optical
+    board_frame_max_age_sec: 2.0
+
     return_home: true
     add_table_collision: false
     # Gazebo-only workaround for unsupported gripper mimic constraints.
