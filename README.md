@@ -121,13 +121,13 @@ Vision-Based Autonomous Tic-Tac-Toe with a ROS2 Manipulator and Gazebo Digital T
 ---
 ## 오전
 - 권신용
-  - 
+  - Gazebo 보드 좌표계 수정, 매니퓰레이터 pick-and-place 실동작 연동, feature/integration와 minimax 로직 동기화
 - 곽정미
   - 
 - 이명연
-  - 
+  - 좌표 추정 및 변환
 - 주영찬
-  - 
+  - digital twin 오류 수정 및 개발
 - 박미진
   - 
 
