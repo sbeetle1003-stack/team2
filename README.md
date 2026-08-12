@@ -123,8 +123,7 @@ Vision-Based Autonomous Tic-Tac-Toe with a ROS2 Manipulator and Gazebo Digital T
 - 권신용
   - Gazebo 보드 좌표계 수정, 매니퓰레이터 pick-and-place 실동작 연동, feature/integration와 minimax 로직 동기화
 - 곽정미
-  - 틱택토 로봇팔 Pick & Place 액션 서버 실행 및 통합 테스트
-  - 실제 로봇 구동을 위한 ROS2 토픽 확인, OpenManipulator 관절 상태 및 동작 점검
+  - 틱택토 로봇팔 Pick & Place 액션 서버 실행 및 실제 로봇 구동을 위한 ROS2 토픽 확인
   - 게임 로직–Referee–Pick & Place Controller 간 연동 코드 수정 및 테스트
 - 이명연
   - 좌표 추정 및 변환
@@ -140,7 +139,7 @@ Vision-Based Autonomous Tic-Tac-Toe with a ROS2 Manipulator and Gazebo Digital T
   - Game reset, over logic 개발 및 digital twin test, gripper 토크 측정 초기
 - 곽정미
   - ArUco 기반 실제 보드 프레임과 TF 기반 셀 위치 계산 기능 구현·점검
-  - 기존 Referee, AI, Pick & Place 코드와 새 좌표 변환 기능의 연동 상태 확인, 동작 구조 정리
+  - OpenManipulator 이용해 기존 Referee, AI, Pick & Place 코드와 새 좌표 변환 기능의 연동 상태 확인, 동작 구조 정리
 - 이명연
   - 좌표 추정 및 변환
 - 주영찬
