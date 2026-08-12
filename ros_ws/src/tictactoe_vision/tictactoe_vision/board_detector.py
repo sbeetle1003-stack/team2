@@ -27,10 +27,12 @@ BOARD_CROP_MARGIN_RATIO = 0.12
 BOARD_SIZE = 600
 
 # Cell 가장자리의 검은 격자선을 색상 판정에서 제외하기 위한 여백 비율
-CELL_INNER_MARGIN_RATIO = 0.12
+CELL_INNER_MARGIN_RATIO = 0.18
 
 # ROI 안에서 이 비율 이상 색상이 검출되면 말이 있다고 판단
 COLOR_RATIO_THRESHOLD = 0.08
+# 같은 BoardState가 연속으로 이 횟수만큼 검출되어야 확정
+STABLE_FRAME_COUNT = 5
 
 
 BOARD_MARKER_IDS = {
@@ -190,9 +192,10 @@ def classify_cell(roi):
     margin_x = int(width * CELL_INNER_MARGIN_RATIO)
     margin_y = int(height * CELL_INNER_MARGIN_RATIO)
 
+    center_margin = 50
     inner_roi = roi[
-        margin_y : height - margin_y,
-        margin_x : width - margin_x,
+        center_margin:height-center_margin,
+        center_margin:width-center_margin
     ]
 
     hsv = cv2.cvtColor(inner_roi, cv2.COLOR_BGR2HSV)
@@ -314,8 +317,12 @@ class BoardDetectorNode(Node):
         )
         self.parameters = cv2.aruco.DetectorParameters_create()
 
-        # 같은 상태를 계속 publish하지 않도록 이전 상태 저장
+        # 마지막으로 publish한 확정 상태
         self.previous_board_state = None
+
+        # 현재 안정화 여부를 확인 중인 후보 상태
+        self.candidate_board_state = None
+        self.candidate_count = 0
 
         # 약 10 Hz로 카메라 처리
         self.timer = self.create_timer(
@@ -389,15 +396,27 @@ class BoardDetectorNode(Node):
             # 7. ROI 분할 + 색상 판정
             board_state, board_display = analyze_board(board_img)
 
-            # 8. 상태가 달라졌을 때만 ROS2 publish
-            if board_state != self.previous_board_state:
+            # 8. BoardState 안정화
+            # 같은 상태가 여러 프레임 연속 검출되었을 때만 확정한다.
+            if board_state == self.candidate_board_state:
+                self.candidate_count += 1
+            else:
+                self.candidate_board_state = board_state.copy()
+                self.candidate_count = 1
+
+            # 충분히 안정적으로 관측되었고,
+            # 마지막 publish 상태와도 다를 때만 전송
+            if (
+                self.candidate_count >= STABLE_FRAME_COUNT
+                and board_state != self.previous_board_state
+            ):
                 msg = Int8MultiArray()
                 msg.data = board_state
 
                 self.board_state_pub.publish(msg)
 
                 self.get_logger().info(
-                    f"BoardState: {board_state}"
+                    f"Stable BoardState: {board_state}"
                 )
 
                 self.previous_board_state = board_state.copy()

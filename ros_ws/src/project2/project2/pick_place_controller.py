@@ -471,7 +471,11 @@ class PickPlaceController(Node):
 
             if self.return_home:
                 self._feedback(goal_handle, 'RETURN_HOME', 98.0)
-                self._move_named(self.arm, 'home', 'RETURN_HOME')
+                self._move_named(
+                    self.arm,
+                    'board_view',
+                    'RETURN_BOARD_VIEW',
+                )
 
             self.next_piece_index += 1
             goal_handle.succeed()
