@@ -1,1 +1,0 @@
-/home/ju/team2/gong_ws/src/project2/models/aruco_cube_8/material/textures/create_aruco_maker.py

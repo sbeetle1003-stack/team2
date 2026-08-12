@@ -1,5 +1,10 @@
 [console_scripts]
-aruco_tf_publisher = project2.aruco_tf_publisher:main
+create_aruco_maker = project2.create_aruco_maker:main
+digital_twin_board = project2.digital_twin_board:main
+digital_twin_robot = project2.digital_twin_robot:main
+gazebo_joint_mirror = project2.gazebo_joint_mirror:main
+manipulation_geometry = project2.manipulation_geometry:main
 multi_aruco_tf_sub = project2.multi_aruco_tf_sub:main
 pick_place_controller = project2.pick_place_controller:main
+tic_tac_toe_manual_test = project2.tic_tac_toe_manual_test:main
 tic_tac_toe_referee = project2.tic_tac_toe_referee:main
