@@ -27,7 +27,7 @@ from project2.tic_tac_toe_ai import (
     EMPTY,
     HUMAN,
     ROBOT,
-    choose_best_move,
+    choose_move,
     game_outcome,
     is_valid_move,
 )
@@ -50,6 +50,7 @@ HUMAN_MARKER_PARK_Z = 0.025
 class ManualTicTacToeNode(Node):
     def __init__(self):
         super().__init__('tic_tac_toe_manual_test')
+        self.declare_parameter('difficulty', 'hard')  # easy | normal | hard
         self.board_state = [[EMPTY] * 3 for _ in range(3)]
         self.game_state = "WAIT_FOR_HUMAN"
         self.pending_cell = None
@@ -166,8 +167,9 @@ class ManualTicTacToeNode(Node):
 
     def request_robot_turn(self):
         """minimax로 최적의 수를 계산해 PlacePiece 액션 서버에 실행을 요청한다."""
-        self.get_logger().info("로봇(X)이 다음 수를 계산하고 있습니다...")
-        move = choose_best_move(self.board_state)
+        difficulty = self.get_parameter('difficulty').value
+        self.get_logger().info(f"로봇(X)이 다음 수를 계산하고 있습니다... (난이도: {difficulty})")
+        move = choose_move(self.board_state, difficulty)
         if move is None:
             self.game_state = "GAME_OVER"
             self.turn_ready.set()

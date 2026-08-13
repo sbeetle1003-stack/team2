@@ -31,6 +31,7 @@ def generate_launch_description():
     start_pick_place = LaunchConfiguration('start_pick_place')
     start_vision = LaunchConfiguration('start_vision')
     start_referee = LaunchConfiguration('start_referee')
+    difficulty = LaunchConfiguration('difficulty')
 
     declared_arguments = [
         DeclareLaunchArgument(
@@ -59,6 +60,11 @@ def generate_launch_description():
             'start_referee',
             default_value='false',
             description='Start the temporary camera referee/action client.',
+        ),
+        DeclareLaunchArgument(
+            'difficulty',
+            default_value='hard',
+            description='Robot AI difficulty: easy | normal | hard.',
         ),
     ]
 
@@ -256,7 +262,7 @@ def generate_launch_description():
                 package='project2',
                 executable='tic_tac_toe_referee',
                 output='screen',
-                parameters=[{'use_sim_time': True}],
+                parameters=[{'use_sim_time': True, 'difficulty': difficulty}],
                 condition=IfCondition(start_referee),
             )
         ],

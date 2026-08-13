@@ -13,7 +13,7 @@ from sensor_msgs.msg import CameraInfo, Image
 from std_srvs.srv import Trigger
 
 from project2.manipulation_geometry import cell_center, supply_position
-from project2.tic_tac_toe_ai import HUMAN, ROBOT, choose_best_move, game_outcome
+from project2.tic_tac_toe_ai import HUMAN, ROBOT, choose_move, game_outcome
 
 # config/manipulation.yaml의 board_origin_x/y, cell_spacing과 일치해야 한다.
 BOARD_ORIGIN_X = 0.30
@@ -36,6 +36,7 @@ class TicTacToeRefereeNode(Node):
 
         self.declare_parameter('image_topic', '/gripper_camera/image_raw')
         self.declare_parameter('camera_info_topic', '/gripper_camera/camera_info')
+        self.declare_parameter('difficulty', 'hard')  # easy | normal | hard
 
         self.bridge = CvBridge()
         self.camera_matrix = None
@@ -229,8 +230,9 @@ class TicTacToeRefereeNode(Node):
         return next_state_if_ongoing
 
     def request_robot_turn(self):
-        """Ask minimax for the robot's optimal move and send it to the motion action server."""
-        move = choose_best_move(self.board_state)
+        """Ask the AI for the robot's next move (per difficulty param) and send it to the motion action server."""
+        difficulty = self.get_parameter('difficulty').value
+        move = choose_move(self.board_state, difficulty)
         if move is None:
             self.game_state = 'GAME_OVER'
             return

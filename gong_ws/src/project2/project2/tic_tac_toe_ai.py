@@ -7,9 +7,18 @@ tic_tac_toe_referee.py의 board_state와 동일한 값 규약을 쓴다.
 ROS/Gazebo와 무관한 순수 로직이라 단독으로 임포트·테스트할 수 있다.
 """
 
+import random
+
 EMPTY = 0
 HUMAN = 1
 ROBOT = 2
+
+# normal 난이도에서 minimax가 내다보는 최대 수(ply). 로봇 자신의 수 이후
+# 기준으로, 이 수를 넘어서면 정확한 승패 대신 0(무승부 취급)으로 잘라
+# 실력을 낮춘다.
+NORMAL_MAX_DEPTH = 2
+# easy 난이도에서 최적수 대신 완전 무작위 수를 두는 확률.
+EASY_RANDOM_PROB = 0.8
 
 WIN_LINES = [
     [(0, 0), (0, 1), (0, 2)],
@@ -82,7 +91,9 @@ def is_valid_move(board: list[list[int]], row: int, col: int) -> bool:
     return 0 <= row < 3 and 0 <= col < 3 and board[row][col] == EMPTY
 
 
-def _minimax(board: list[list[int]], depth: int, is_maximizing: bool) -> int:
+def _minimax(
+    board: list[list[int]], depth: int, is_maximizing: bool, max_depth: int | None = None
+) -> int:
     winner = check_winner(board)
     if winner == ROBOT:
         return 10 - depth
@@ -90,42 +101,93 @@ def _minimax(board: list[list[int]], depth: int, is_maximizing: bool) -> int:
         return depth - 10
     if is_draw(board):
         return 0
+    if max_depth is not None and depth >= max_depth:
+        # 여기서 더 못 내다보므로 무승부로 간주하고 잘라낸다 (난이도 하향용).
+        return 0
 
     if is_maximizing:
         best = float("-inf")
         for r, c in get_empty_cells(board):
             board[r][c] = ROBOT
-            best = max(best, _minimax(board, depth + 1, False))
+            best = max(best, _minimax(board, depth + 1, False, max_depth))
             board[r][c] = EMPTY
         return best
 
     best = float("inf")
     for r, c in get_empty_cells(board):
         board[r][c] = HUMAN
-        best = min(best, _minimax(board, depth + 1, True))
+        best = min(best, _minimax(board, depth + 1, True, max_depth))
         board[r][c] = EMPTY
     return best
 
 
-def choose_best_move(board: list[list[int]]) -> tuple[int, int] | None:
+def choose_best_move(
+    board: list[list[int]],
+    max_depth: int | None = None,
+    candidates: list[tuple[int, int]] | None = None,
+) -> tuple[int, int] | None:
     """로봇(O)이 둘 최적의 (row, col)을 minimax로 계산한다.
 
     이미 게임이 끝났거나 빈 칸이 없으면 None을 반환한다.
     승리는 최대한 빨리, 패배는 최대한 늦게 하도록 depth를 점수에 반영한다.
+    max_depth를 주면 그 수만큼만 내다보고 잘라내 실력을 낮춘다(None이면 완전탐색).
+    candidates를 주면 그 칸들 중에서만 고른다(None이면 빈 칸 전체).
     """
     if is_game_over(board):
         return None
 
+    cells = candidates if candidates is not None else get_empty_cells(board)
     best_score = float("-inf")
     best_move = None
-    for r, c in get_empty_cells(board):
+    for r, c in cells:
         board[r][c] = ROBOT
-        score = _minimax(board, 0, False)
+        score = _minimax(board, 0, False, max_depth)
         board[r][c] = EMPTY
         if score > best_score:
             best_score = score
             best_move = (r, c)
     return best_move
+
+
+# easy 난이도에서 로봇의 '첫 수'(사람이 선수를 둔 직후 첫 응수)에는 두지 못하게
+# 막는 네 귀퉁이 칸(1-1, 1-3, 3-1, 3-3을 0-index로 변환한 값).
+EASY_FIRST_MOVE_BANNED_CELLS = {(0, 0), (0, 2), (2, 0), (2, 2)}
+
+
+def _is_robots_opening_reply(board: list[list[int]]) -> bool:
+    """보드에 말이 정확히 1개(사람의 첫 수)만 있어 지금이 로봇의 첫 수 차례인지."""
+    placed = sum(1 for row in board for cell in row if cell != EMPTY)
+    return placed == 1
+
+
+def choose_move(
+    board: list[list[int]], difficulty: str = "hard"
+) -> tuple[int, int] | None:
+    """난이도에 따라 로봇의 다음 수를 고른다.
+
+    - easy: 대부분 무작위(EASY_RANDOM_PROB 확률), 가끔만 최적수.
+      단, 로봇의 첫 수(사람 선수 직후 응수)에서는 EASY_FIRST_MOVE_BANNED_CELLS
+      (네 귀퉁이)를 후보에서 제외한다.
+    - normal: NORMAL_MAX_DEPTH 수만 내다보는 depth 제한 minimax.
+    - hard: 완전탐색 minimax(기존 choose_best_move와 동일, 절대 안 짐).
+    """
+    if is_game_over(board):
+        return None
+
+    if difficulty == "easy":
+        candidates = get_empty_cells(board)
+        if _is_robots_opening_reply(board):
+            candidates = [
+                cell for cell in candidates if cell not in EASY_FIRST_MOVE_BANNED_CELLS
+            ]
+        if random.random() < EASY_RANDOM_PROB:
+            return random.choice(candidates) if candidates else None
+        return choose_best_move(board, candidates=candidates)
+
+    if difficulty == "normal":
+        return choose_best_move(board, max_depth=NORMAL_MAX_DEPTH)
+
+    return choose_best_move(board)
 
 
 if __name__ == "__main__":
