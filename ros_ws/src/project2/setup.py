@@ -37,18 +37,10 @@ data_files = [
         os.path.join('share', package_name, 'config'),
         glob('config/*.yaml'),
     ),
-    (
-        os.path.join('share', package_name, 'models', 'textures'), 
-        glob('models/textures/*')
-    ),
-    (
-        os.path.join('share', package_name, 'world'),
-        glob('world/*.sdf'),
-    ),
-    (
-        os.path.join('share', package_name, 'models'),
-        glob('models/*.sdf'),
-    ),
+    # (
+    #     os.path.join('share', package_name, 'models', 'textures'), 
+    #     glob('models/textures/*')
+    # ),
 ]
 data_files.extend(collect_data_files('world'))
 data_files.extend(collect_data_files('models'))
@@ -77,6 +69,8 @@ setup(
             'digital_twin_robot = project2.digital_twin_robot:main',
             'create_aruco_maker = project2.create_aruco_maker:main',
             'manipulation_geometry = project2.manipulation_geometry:main',
+            'spawn_test_node = project2.spawn_test_node:main',
+            
             
         ],
     },
