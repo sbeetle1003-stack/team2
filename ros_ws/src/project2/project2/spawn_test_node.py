@@ -1,16 +1,16 @@
 import os
+import time
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 from ament_index_python.packages import get_package_share_directory
 from ros_gz_interfaces.srv import SpawnEntity
-from ros_gz_interfaces.msg import Entity
 
 class SpawnTestNode(Node):
     def __init__(self):
         super().__init__('spawn_test_node')
         
-        # 1. 임의의 액션/위치 정보를 받을 구독자 생성 (/tictactoe_action 토픽)
+        # 1. 액션/위치 정보를 받을 구독자 생성 (/tictactoe_action 토픽)
         self.subscription = self.create_subscription(
             String,
             '/tictactoe_action',
@@ -20,6 +20,7 @@ class SpawnTestNode(Node):
         
         # 2. Gazebo Harmonic 엔티티 생성 서비스 클라이언트 연결
         self.spawn_service_name = '/world/tictactoe_world/create'
+        # self.spawn_service_name = '/world/empty_world/create'
         self.spawn_client = self.create_client(SpawnEntity, self.spawn_service_name)
         self.get_logger().info(f"Spawn client created for service: {self.spawn_service_name}")
             
@@ -38,7 +39,7 @@ class SpawnTestNode(Node):
             (2, 2): {'x': 0.22, 'y': -0.08, 'z': 0.04},
         }
         
-        self.get_logger().info("Spawn Test Node Ready. Send message to /tictactoe_action")
+        self.get_logger().info("Spawn Test Node Ready. Send message to /tictactoe_action (e.g., human,1,1)")
 
     def action_callback(self, msg):
         try:
@@ -50,12 +51,14 @@ class SpawnTestNode(Node):
             self.get_logger().error(f"Invalid message format! Use 'player,row,col' (e.g. human,1,1). Error: {e}")
             return
 
+        # 고유한 타임스탬프를 조합하여 중복 엔티티 이름 충돌(Interrupted system call) 원천 차단
+        timestamp = int(time.time() * 1000) # 밀리초 단위로 충돌 확률 극소화
         if player == "human":
             filename = "o_mark.sdf"
-            entity_name = f"human_piece_{row}_{col}"
+            entity_name = f"human_piece_{row}_{col}_{timestamp}"
         elif player == "robot":
             filename = "x_mark.sdf"
-            entity_name = f"robot_piece_{row}_{col}"
+            entity_name = f"robot_piece_{row}_{col}_{timestamp}"
         else:
             self.get_logger().error(f"Unknown player type: {player}")
             return
@@ -71,7 +74,7 @@ class SpawnTestNode(Node):
             self.get_logger().error(f"Coordinates for cell ({row}, {col}) not found!")
             return
 
-        # 🟢 [수정 완료] Gazebo Harmonic (ros_gz_interfaces) 방식의 올바른 요청 구성
+        # Gazebo Harmonic (ros_gz_interfaces) 방식의 요청 구성
         request = SpawnEntity.Request()
         request.entity_factory.name = entity_name
         request.entity_factory.sdf = sdf_content
@@ -80,9 +83,17 @@ class SpawnTestNode(Node):
         request.entity_factory.pose.position.z = float(coords['z'])
         request.entity_factory.pose.orientation.w = 1.0
 
-        self.get_logger().info(f"Spawning {player} piece at ({row}, {col}) -> x={coords['x']}, y={coords['y']}")
+        self.get_logger().info(f"Spawning {player} piece as '{entity_name}' at ({row}, {col})")
+        
+        if not self.spawn_client.wait_for_service(timeout_sec=5.0):
+            self.get_logger().error(f"Spawn service {self.spawn_service_name} not available!")
+            return
 
-        # 비동기 서비스 호출
+        # 서비스 서버 대기 후 비동기 호출
+        if not self.spawn_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().error(f"Spawn service {self.spawn_service_name} not available!")
+            return
+
         future = self.spawn_client.call_async(request)
         future.add_done_callback(
             lambda completed_future: self.spawn_response_callback(
@@ -103,14 +114,12 @@ class SpawnTestNode(Node):
     def spawn_response_callback(self, future, entity_name, row, col):
         try:
             response = future.result()
-            self.get_logger().info(f"Received response object: {response}")
-
             if response is not None and getattr(response, 'success', False):
-                self.get_logger().info(f"Successfully spawned {entity_name}!")
+                self.get_logger().info(f"Successfully spawned {entity_name} at ({row}, {col})!")
             else:
                 self.get_logger().warning(f"Spawn failed for {entity_name}")
         except Exception as e:
-            self.get_logger().error(f"Error: {e}")
+            self.get_logger().error(f"Service callback error: {e}")
         
 def main(args=None):
     rclpy.init(args=args)
