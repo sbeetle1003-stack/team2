@@ -173,7 +173,7 @@ Vision-Based Autonomous Tic-Tac-Toe with a ROS2 Manipulator and Gazebo Digital T
 - 주영찬
   - 
 - 박미진
-  - 
+  - empty_world 수정
 
 
 ---
@@ -190,7 +190,7 @@ Vision-Based Autonomous Tic-Tac-Toe with a ROS2 Manipulator and Gazebo Digital T
 - 주영찬
   - 
 - 박미진
-  - 
+  - digital_twin 시뮬레이션 연동
 
 - 금일 목표과제
 
