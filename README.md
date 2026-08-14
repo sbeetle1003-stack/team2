@@ -160,7 +160,9 @@ Vision-Based Autonomous Tic-Tac-Toe with a ROS2 Manipulator and Gazebo Digital T
 - 권신용
   - 
 - 곽정미
-  - 
+  - CV 기반 보드·말 인식 결과를 로봇 동작 제어 코드와 연동하고 실제 게임판에서 Pick & Place 테스트 진행
+  - 3×3 보드의 셀별 매니퓰레이터 관절 좌표와 Pick, Ready, Place 상태를 측정·기록하여 동작 자세 데이터 제작
+  - 각 셀에 말을 정확하게 배치할 수 있도록 이동 경로, 그리퍼 동작 및 관절 설정값 반복 보정
 - 이명연
   - 
 - 주영찬
@@ -174,7 +176,10 @@ Vision-Based Autonomous Tic-Tac-Toe with a ROS2 Manipulator and Gazebo Digital T
 - 권신용
   - 
 - 곽정미
-  - 
+  - 보드 인식 → 게임 상태 판정 → AI 수 선택 → Action Server 실행 순서로 실제 틱택토 플레이가 가능하도록 코드 수정
+  - Board Detector, Referee, AI, Pick & Place Action Server 등 실행 노드를 하나의 Launch 파일로 구성
+  - 사람의 수 인식, 유효 수 검증, 로봇 차례 요청 및 말 배치까지 전체 게임 흐름 통합 테스트 진행
+  - 실제 게임 반복 테스트를 통해 셀별 말 배치 정확도와 노드 간 데이터 전달 상태 점검
 - 이명연
   - 
 - 주영찬
@@ -187,14 +192,14 @@ Vision-Based Autonomous Tic-Tac-Toe with a ROS2 Manipulator and Gazebo Digital T
 
 
 
-## 2026-08-14(5일차)
+# 2026-08-14(5일차)
 
 ---
-#오전
+## 오전
 - 권신용
   - 
 - 곽정미
-  - 
+  - 통합 브랜치(feature/integration)에 최종 커밋: 중복·미사용 프로젝트 폴더를 삭제하여 저장소 구조를 ros_ws 중심으로 정리
 - 이명연
   - 
 - 주영찬
@@ -204,7 +209,7 @@ Vision-Based Autonomous Tic-Tac-Toe with a ROS2 Manipulator and Gazebo Digital T
 
 
 ---
-#오후
+## 오후
 - 권신용
   - 
 - 곽정미
