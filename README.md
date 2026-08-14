@@ -13,7 +13,8 @@
 
 ## 🔗 Project Resources
 
-- 📄 Project Proposal: https://docs.google.com/document/d/1ujhqk1tdocbYJao8EDuLnZ8Bm_JgyH2_NuoS8eUxt3c/edit?usp=sharing
+- 📄 프로젝트 계획서(Project Proposal): https://docs.google.com/document/d/1ujhqk1tdocbYJao8EDuLnZ8Bm_JgyH2_NuoS8eUxt3c/edit?usp=sharing
+- 📘 프로젝트 기술서(Project Technical Documentation): https://docs.google.com/document/d/1Z4MBXgkKojT1f3sGWWhpxneNh8m8rO2g-URWXvf2Gks/edit?usp=sharing
 - 💻 Git Repository: https://github.com/sbeetle1003-stack/team2.git
 - 📊 Presentation: https://canva.link/9rw1bpriaxepf4e
 - 🎥 Demo Videos: https://drive.google.com/drive/folders/1AAGy-i4upjIirfMzzVO9x_sENu5Rv3MT?usp=sharing
