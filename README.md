@@ -15,7 +15,7 @@
 - 📄 Project Proposal: https://docs.google.com/document/d/1ujhqk1tdocbYJao8EDuLnZ8Bm_JgyH2_NuoS8eUxt3c/edit?usp=sharing
 - 💻 Git Repository: https://github.com/sbeetle1003-stack/team2.git
 - 📊 Presentation: 
-- 🎥 Demo Video: https://youtu.be/fUDVXlAjMoQ?si=mpPt4mSILIlT5iIF
+- 🎥 Demo Video: https://drive.google.com/drive/folders/1AAGy-i4upjIirfMzzVO9x_sENu5Rv3MT?usp=sharing
 <br>
 
 
