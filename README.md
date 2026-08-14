@@ -1,8 +1,12 @@
-# team2
+# Vision-Based Autonomous Tic-Tac-Toe with a ROS2 Manipulator
+
+### ROS2 매니퓰레이터 기반 비전 자율 틱택토 시스템
+
+**Team 2**
 - README.md 공지
- - READMD.md 매일 11:40, 16:30 종합 후 작성
- - 주요 작업만 작성 예정, 추가 작성이 필요한 경우 README에 작성 후 팀장에게 얘기하면 확인하여 추가 작성할 계획.
- - 다른 좋은 의견이 있다면 언제든지 말씀해주세요.
+- READMD.md 매일 11:40, 16:30 종합 후 작성
+- 주요 작업만 작성 예정, 추가 작성이 필요한 경우 README에 작성 후 팀장에게 얘기하면 확인하여 추가 작성할 계획.
+- 다른 좋은 의견이 있다면 언제든지 말씀해주세요.
 
 
 > [!IMPORTANT]
