@@ -34,8 +34,8 @@ poses:
       arm: [0.1978835216, 0.6028544496, -0.6841554314, 1.2363885150]
 
 motion:
-  supply_lift_seconds: 3
-  supply_grasp_seconds: 3
-  cell_drop_seconds: 4
-  return_seconds: 4
-  board_view_seconds: 4
+  supply_lift_seconds: 1.5
+  supply_grasp_seconds: 2.0
+  cell_drop_seconds: 2.5
+  return_seconds: 2.0
+  board_view_seconds: 2.5
