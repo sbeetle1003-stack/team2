@@ -1,250 +1,314 @@
-"""Simple camera referee that delegates robot motion to PlacePiece action."""
+"""ROS2 referee for the tic-tac-toe robot.
 
-import cv2
-from cv_bridge import CvBridge
-import numpy as np
-from project2_interfaces.action import PlacePiece
+Receives the physical board state from /board_state, validates turn-by-turn
+board transitions, asks the AI for the robot move, and sends that move to the
+PlacePiece action server.
+
+Important recovery behavior:
+- Vision updates observed while the robot action is running are not committed
+  immediately, but a valid ROBOT placement at the pending cell is remembered.
+- Even if the action result reports a late-stage failure (for example RELEASE),
+  the referee can recover if vision has already confirmed that the robot piece
+  was physically placed at the expected cell.
+"""
+
 import rclpy
+from project2_interfaces.action import PlacePiece
 from rclpy.action import ActionClient
 from rclpy.node import Node
-from ros_gz_interfaces.msg import Entity
-from ros_gz_interfaces.srv import SetEntityPose
-from sensor_msgs.msg import CameraInfo, Image
-from std_srvs.srv import Trigger
+from std_msgs.msg import Int8MultiArray
 
-from project2.manipulation_geometry import cell_center, supply_position
-from project2.tic_tac_toe_ai import HUMAN, ROBOT, choose_move, game_outcome
+from project2.tic_tac_toe_ai import (
+    check_winner,
+    choose_move,
+    is_draw,
+)
 
-# config/manipulation.yaml의 board_origin_x/y, cell_spacing과 일치해야 한다.
-BOARD_ORIGIN_X = 0.30
-BOARD_ORIGIN_Y = 0.0
-CELL_SPACING = 0.08
-HUMAN_MARKER_Z = 0.05  # matches config/manipulation.yaml piece_rest_z for the same thin-cylinder pieces
-HUMAN_MARKER_COUNT = 5
-# world 파일의 human_marker_0..4 초기 스폰 위치와 동일 (리셋 시 여기로 되돌린다).
-HUMAN_MARKER_PARK_X = 0.10
-HUMAN_MARKER_PARK_Y = 0.20
-HUMAN_MARKER_PARK_SPACING = 0.05
-HUMAN_MARKER_PARK_Z = 0.025
+
+EMPTY = 0
+HUMAN = 1
+ROBOT = 2
+UNKNOWN = 3
+
+WAIT_FOR_HUMAN = "WAIT_FOR_HUMAN"
+ROBOT_MOVING = "ROBOT_MOVING"
+WAIT_FOR_ROBOT_CONFIRMATION = "WAIT_FOR_ROBOT_CONFIRMATION"
+GAME_OVER = "GAME_OVER"
+ERROR = "ERROR"
 
 
 class TicTacToeRefereeNode(Node):
-    """Detect human pieces and request a robot placement for the next turn."""
+    """Manage turns between board vision, AI, and the PlacePiece action server."""
 
     def __init__(self):
-        super().__init__('tic_tac_toe_referee')
+        super().__init__("tic_tac_toe_referee")
 
-        self.declare_parameter('image_topic', '/gripper_camera/image_raw')
-        self.declare_parameter('camera_info_topic', '/gripper_camera/camera_info')
         self.declare_parameter('difficulty', 'hard')  # easy | normal | hard
 
-        self.bridge = CvBridge()
-        self.camera_matrix = None
-        self.dist_coeffs = None
-        self.board_state = [[0, 0, 0] for _ in range(3)]
-        self.game_state = 'WAIT_FOR_HUMAN'
+        self.board_state = [[EMPTY, EMPTY, EMPTY] for _ in range(3)]
+        self.previous_board_state = None
+
+        self.game_state = WAIT_FOR_HUMAN
         self.pending_cell = None
 
-        self.aruco_dict = cv2.aruco.getPredefinedDictionary(
-            cv2.aruco.DICT_4X4_50
-        )
-        if hasattr(cv2.aruco, 'DetectorParameters_create'):
-            self.aruco_params = cv2.aruco.DetectorParameters_create()
-        else:
-            self.aruco_params = cv2.aruco.DetectorParameters()
+        # Robot-placement observation remembered while Action is still running.
+        # This is important because board_detector only publishes when the stable
+        # board state changes. If the robot piece is seen before the Action result
+        # arrives, there may be no second /board_state message afterward.
+        self.robot_move_seen_during_action = False
+        self.observed_robot_board = None
 
         self.create_subscription(
-            Image,
-            self.get_parameter('image_topic').value,
-            self.image_callback,
+            Int8MultiArray,
+            "/board_state",
+            self.board_state_callback,
             10,
         )
-        self.create_subscription(
-            CameraInfo,
-            self.get_parameter('camera_info_topic').value,
-            self.info_callback,
-            10,
-        )
-        self.place_piece_client = ActionClient(self, PlacePiece, 'place_piece')
 
-        # 사람 수는 로봇 팔을 움직이지 않고, world에 미리 놓아둔 빨간 O
-        # 마커(human_marker_0..4)를 SetEntityPose로 해당 칸에 옮겨 표시한다.
-        self.human_piece_index = 0
-        self.set_pose_client = self.create_client(
-            SetEntityPose, '/world/tictactoe_world/set_pose'
-        )
-        # 새 게임을 시작할 때 로봇 피스 공급 위치/인덱스를 초기화하는 서비스.
-        self.reset_pieces_client = self.create_client(Trigger, 'reset_pieces')
-        # 외부(카메라 파이프라인 등)에서 언제든 게임을 초기화할 수 있게 서비스로 노출한다.
-        self.reset_game_service = self.create_service(
-            Trigger, 'reset_game', self._reset_game_callback
+        self.place_piece_client = ActionClient(
+            self,
+            PlacePiece,
+            "place_piece",
         )
 
-        self.get_logger().info('틱택토 심판 노드 준비 완료')
-
-    def _set_entity_pose(self, name, x, y, z):
-        if not self.set_pose_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().warning('SetEntityPose 서비스를 찾을 수 없어 마커 이동을 생략합니다.')
-            return
-        request = SetEntityPose.Request()
-        request.entity.name = name
-        request.entity.type = Entity.MODEL
-        request.pose.position.x = float(x)
-        request.pose.position.y = float(y)
-        request.pose.position.z = float(z)
-        request.pose.orientation.w = 1.0
-        self.set_pose_client.call_async(request)
-
-    def _place_human_marker(self, row, column):
-        """사람이 둔 칸에 빨간 O 마커를 옮겨 Gazebo에도 반영한다 (팔은 움직이지 않음)."""
-        if self.human_piece_index >= HUMAN_MARKER_COUNT:
-            self.get_logger().warning('사람 마커를 모두 사용했습니다 (표시는 생략).')
-            return
-
-        cell_id = row * 3 + column
-        x, y = cell_center(cell_id, BOARD_ORIGIN_X, BOARD_ORIGIN_Y, CELL_SPACING)
-        self._set_entity_pose(f'human_marker_{self.human_piece_index}', x, y, HUMAN_MARKER_Z)
-        self.human_piece_index += 1
-
-    def reset_game(self):
-        """보드/피스를 모두 초기 상태로 되돌리고 새 게임을 시작한다."""
-        for index in range(self.human_piece_index):
-            park_x, park_y = supply_position(
-                index, HUMAN_MARKER_PARK_X, HUMAN_MARKER_PARK_Y, HUMAN_MARKER_PARK_SPACING
-            )
-            self._set_entity_pose(f'human_marker_{index}', park_x, park_y, HUMAN_MARKER_PARK_Z)
-        self.human_piece_index = 0
-
-        if self.reset_pieces_client.wait_for_service(timeout_sec=2.0):
-            self.reset_pieces_client.call_async(Trigger.Request())
-        else:
-            self.get_logger().warning('pick_place_controller의 reset_pieces 서비스를 찾을 수 없습니다.')
-
-        self.board_state = [[0, 0, 0] for _ in range(3)]
-        self.game_state = 'WAIT_FOR_HUMAN'
-        self.pending_cell = None
-        self.get_logger().info('게임을 초기화했습니다. 새 게임을 시작하세요.')
-
-    def _reset_game_callback(self, request, response):
-        if self.pending_cell is not None:
-            response.success = False
-            response.message = '로봇이 동작 중입니다. 완료 후 다시 시도하세요.'
-            return response
-        self.reset_game()
-        response.success = True
-        response.message = '게임을 초기화했습니다.'
-        return response
-
-    def info_callback(self, msg):
-        """Cache calibrated camera parameters."""
-        if self.camera_matrix is None:
-            self.camera_matrix = np.asarray(msg.k, dtype=np.float64).reshape(3, 3)
-            self.dist_coeffs = np.asarray(msg.d, dtype=np.float64)
-
-    def image_callback(self, msg):
-        """Update the human board state from ArUco observations."""
-        if self.camera_matrix is None:
-            return
-
-        frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        corners, ids, _ = cv2.aruco.detectMarkers(
-            gray,
-            self.aruco_dict,
-            parameters=self.aruco_params,
+        self.get_logger().info(
+            f"틱택토 심판 노드 준비 완료 (state={self.game_state})"
         )
-
-        if ids is not None:
-            cv2.aruco.drawDetectedMarkers(frame, corners, ids)
-            _, translations, _ = cv2.aruco.estimatePoseSingleMarkers(
-                corners,
-                0.04,
-                self.camera_matrix,
-                self.dist_coeffs,
-            )
-            for index, marker_id in enumerate(ids.flatten()):
-                if not 11 <= marker_id <= 15:
-                    continue
-                translation = translations[index][0]
-                row, column = self.get_board_cell(
-                    translation[0],
-                    translation[1],
-                )
-                if row is None or self.board_state[row][column] != 0:
-                    continue
-                if self.game_state != 'WAIT_FOR_HUMAN':
-                    continue
-                self.board_state[row][column] = HUMAN
-                self.get_logger().info(f'사람 수 감지: ({row}, {column})')
-                self._place_human_marker(row, column)
-                self.game_state = self.judge_and_advance('ROBOT_TURN')
-
-        self.draw_tictactoe_overlay(frame)
-        cv2.imshow('Tic-Tac-Toe Referee', frame)
-        cv2.waitKey(1)
-
-        if self.game_state == 'ROBOT_TURN' and self.pending_cell is None:
-            self.request_robot_turn()
 
     @staticmethod
-    def get_board_cell(x, y):
-        """Map a board-aligned marker position to a grid row and column.
+    def copy_board(board):
+        """Return a copy of a 3x3 integer board."""
+        return [row.copy() for row in board]
 
-        NOTE: x/y here are marker translations relative to the camera, not
-        world/board_origin coordinates, so this hasn't been re-verified
-        against the column mirror now used in manipulation_geometry.cell_center
-        (this path is unused while the camera is offline). Re-check column
-        direction against a live camera before relying on this again.
+    @staticmethod
+    def detect_human_move(previous_board, new_board):
+        """Return one legal HUMAN move, or None for an invalid transition.
+
+        During WAIT_FOR_HUMAN the only legal change is exactly one
+        EMPTY -> HUMAN transition. Existing pieces may not disappear/change,
+        and a new ROBOT piece may not appear.
         """
-        if -0.15 <= x < -0.05:
-            column = 0
-        elif -0.05 <= x <= 0.05:
-            column = 1
-        elif 0.05 < x <= 0.15:
-            column = 2
-        else:
-            return None, None
+        human_moves = []
 
-        if -0.15 <= y < -0.05:
-            row = 0
-        elif -0.05 <= y <= 0.05:
-            row = 1
-        elif 0.05 < y <= 0.15:
-            row = 2
-        else:
-            return None, None
-        return row, column
+        for row in range(3):
+            for col in range(3):
+                previous = previous_board[row][col]
+                current = new_board[row][col]
 
-    def judge_and_advance(self, next_state_if_ongoing):
-        """Check for a win/draw after a move and transition to GAME_OVER if so."""
-        outcome = game_outcome(self.board_state)
-        if outcome == 'HUMAN':
-            self.get_logger().info('게임 종료: 사람(O) 승리!')
-            return 'GAME_OVER'
-        if outcome == 'ROBOT':
-            self.get_logger().info('게임 종료: 로봇(X) 승리!')
-            return 'GAME_OVER'
-        if outcome == 'DRAW':
-            self.get_logger().info('게임 종료: 무승부!')
-            return 'GAME_OVER'
-        return next_state_if_ongoing
+                if previous == current:
+                    continue
+
+                if previous == EMPTY and current == HUMAN:
+                    human_moves.append((row, col))
+                    continue
+
+                # Any other change is illegal during the human turn.
+                return None
+
+        if len(human_moves) != 1:
+            return None
+
+        return human_moves[0]
+
+    def is_expected_robot_confirmation(self, previous_board, new_board):
+        """Return True only if pending_cell changed EMPTY -> ROBOT.
+
+        Every other cell must remain identical to the previously committed board.
+        """
+        if self.pending_cell is None:
+            return False
+
+        expected_row, expected_col = divmod(self.pending_cell, 3)
+
+        for row in range(3):
+            for col in range(3):
+                previous = previous_board[row][col]
+                current = new_board[row][col]
+
+                if row == expected_row and col == expected_col:
+                    if previous != EMPTY or current != ROBOT:
+                        return False
+                elif current != previous:
+                    return False
+
+        return True
+
+    def finish_robot_confirmation(self, confirmed_board):
+        """Commit a vision-confirmed robot move and advance the game."""
+        if self.pending_cell is None:
+            self.game_state = ERROR
+            self.get_logger().error(
+                "로봇 수를 확정하려 했지만 pending_cell이 없습니다."
+            )
+            return
+
+        row, col = divmod(self.pending_cell, 3)
+
+        self.board_state = self.copy_board(confirmed_board)
+        self.previous_board_state = self.copy_board(confirmed_board)
+
+        self.pending_cell = None
+        self.robot_move_seen_during_action = False
+        self.observed_robot_board = None
+
+        self.get_logger().info(
+            f"Robot Move confirmed: row={row}, col={col}"
+        )
+
+        winner = check_winner(self.board_state)
+
+        if winner == ROBOT:
+            self.game_state = GAME_OVER
+            self.get_logger().info("Game Over: ROBOT wins")
+        elif is_draw(self.board_state):
+            self.game_state = GAME_OVER
+            self.get_logger().info("Game Over: Draw")
+        else:
+            self.game_state = WAIT_FOR_HUMAN
+            self.get_logger().info("사람의 다음 수를 기다립니다.")
+
+    def board_state_callback(self, msg):
+        """Validate a vision update and advance the game state."""
+        if len(msg.data) != 9:
+            self.get_logger().warning(
+                f"잘못된 BoardState 길이: {len(msg.data)}"
+            )
+            return
+
+        if UNKNOWN in msg.data:
+            self.get_logger().warning(
+                "UNKNOWN 상태가 포함되어 있어 BoardState를 무시합니다."
+            )
+            return
+
+        new_board = [
+            list(msg.data[0:3]),
+            list(msg.data[3:6]),
+            list(msg.data[6:9]),
+        ]
+
+        self.get_logger().info(
+            f"BoardState received: {new_board} (state={self.game_state})"
+        )
+
+        # Finished/failed games do not advance automatically.
+        if self.game_state in (GAME_OVER, ERROR):
+            return
+
+        # First stable camera observation becomes the baseline.
+        if self.previous_board_state is None:
+            self.board_state = self.copy_board(new_board)
+            self.previous_board_state = self.copy_board(new_board)
+            self.get_logger().info("초기 BoardState를 등록했습니다.")
+            return
+
+        # While the robot is moving, do not commit transient camera states.
+        # However, remember a strictly valid placement at the AI-selected cell.
+        if self.game_state == ROBOT_MOVING:
+            if self.is_expected_robot_confirmation(
+                self.previous_board_state,
+                new_board,
+            ):
+                if not self.robot_move_seen_during_action:
+                    row, col = divmod(self.pending_cell, 3)
+                    self.get_logger().info(
+                        "Action 실행 중 로봇 말 확인: "
+                        f"row={row}, col={col}"
+                    )
+
+                self.robot_move_seen_during_action = True
+                self.observed_robot_board = self.copy_board(new_board)
+
+            return
+
+        # If the Action has finished, wait for camera confirmation unless the
+        # placement was already observed during ROBOT_MOVING.
+        if self.game_state == WAIT_FOR_ROBOT_CONFIRMATION:
+            if self.is_expected_robot_confirmation(
+                self.previous_board_state,
+                new_board,
+            ):
+                self.finish_robot_confirmation(new_board)
+            else:
+                self.get_logger().warning(
+                    "로봇 수 확인 대기 중 비정상 BoardState를 무시합니다."
+                )
+
+            return
+
+        # Only a legal human move may advance WAIT_FOR_HUMAN.
+        if self.game_state != WAIT_FOR_HUMAN:
+            self.get_logger().warning(
+                f"처리할 수 없는 게임 상태입니다: {self.game_state}"
+            )
+            return
+
+        move = self.detect_human_move(
+            self.previous_board_state,
+            new_board,
+        )
+
+        if move is None:
+            self.get_logger().warning(
+                "Invalid board transition. BoardState를 무시합니다."
+            )
+            return
+
+        row, col = move
+
+        self.board_state = self.copy_board(new_board)
+        self.previous_board_state = self.copy_board(new_board)
+
+        self.get_logger().info(
+            f"Human Move: row={row}, col={col}"
+        )
+
+        winner = check_winner(self.board_state)
+
+        if winner == HUMAN:
+            self.game_state = GAME_OVER
+            self.get_logger().info("Game Over: HUMAN wins")
+            return
+
+        if is_draw(self.board_state):
+            self.game_state = GAME_OVER
+            self.get_logger().info("Game Over: Draw")
+            return
+
+        self.request_robot_turn()
 
     def request_robot_turn(self):
-        """Ask the AI for the robot's next move (per difficulty param) and send it to the motion action server."""
+        """Ask the AI for the next move and send it to the action server."""
         difficulty = self.get_parameter('difficulty').value
         move = choose_move(self.board_state, difficulty)
+
         if move is None:
-            self.game_state = 'GAME_OVER'
+            self.game_state = GAME_OVER
+            self.get_logger().info("AI가 둘 수 있는 수가 없습니다.")
             return
-        target = move[0] * 3 + move[1]
+
+        row, column = move
+        target = row * 3 + column
+
+        self.get_logger().info(
+            f"AI Best Move: row={row}, col={column}, cell={target}"
+        )
 
         if not self.place_piece_client.wait_for_server(timeout_sec=0.1):
-            self.get_logger().warning('PlacePiece action server를 기다리는 중입니다.')
+            self.game_state = ERROR
+            self.get_logger().error(
+                "PlacePiece action server를 찾을 수 없습니다."
+            )
             return
 
         goal = PlacePiece.Goal()
         goal.cell_id = target
+
         self.pending_cell = target
+        self.robot_move_seen_during_action = False
+        self.observed_robot_board = None
+        self.game_state = ROBOT_MOVING
+
         future = self.place_piece_client.send_goal_async(
             goal,
             feedback_callback=self.place_feedback_callback,
@@ -252,64 +316,121 @@ class TicTacToeRefereeNode(Node):
         future.add_done_callback(self.goal_response_callback)
 
     def goal_response_callback(self, future):
-        """Start waiting for the placement result after goal acceptance."""
-        goal_handle = future.result()
-        if not goal_handle.accepted:
-            self.get_logger().error('PlacePiece goal이 거부되었습니다.')
+        """Wait for the result after the action goal is accepted."""
+        try:
+            goal_handle = future.result()
+        except Exception as error:
             self.pending_cell = None
+            self.robot_move_seen_during_action = False
+            self.observed_robot_board = None
+            self.game_state = ERROR
+            self.get_logger().error(
+                f"PlacePiece goal 요청 실패: {error}"
+            )
             return
+
+        if not goal_handle.accepted:
+            self.pending_cell = None
+            self.robot_move_seen_during_action = False
+            self.observed_robot_board = None
+            self.game_state = ERROR
+            self.get_logger().error(
+                "PlacePiece goal이 거부되었습니다."
+            )
+            return
+
         result_future = goal_handle.get_result_async()
         result_future.add_done_callback(self.place_result_callback)
 
     def place_feedback_callback(self, feedback_msg):
-        """Log the current manipulator stage."""
+        """Log the current pick-and-place stage."""
         feedback = feedback_msg.feedback
         self.get_logger().info(
-            f'Pick & Place: {feedback.stage} ({feedback.progress:.0f}%)'
+            f"Pick & Place: {feedback.stage} ({feedback.progress:.0f}%)"
         )
 
     def place_result_callback(self, future):
-        """Commit the robot move only after physical execution succeeds."""
-        result = future.result().result
-        target = self.pending_cell
-        self.pending_cell = None
-        if result.success and target is not None:
-            row, column = divmod(target, 3)
-            self.board_state[row][column] = ROBOT
-            self.get_logger().info(result.message)
-            self.game_state = self.judge_and_advance('WAIT_FOR_HUMAN')
-        else:
-            self.game_state = 'ERROR'
-            self.get_logger().error(result.message)
+        """Resolve an Action result using vision as the final source of truth.
 
-    def draw_tictactoe_overlay(self, frame):
-        """Draw the currently committed board state on the camera image."""
-        start_x, start_y = 30, 50
-        cv2.putText(
-            frame,
-            '--- Tic-Tac-Toe Board State ---',
-            (start_x, start_y),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.6,
-            (255, 255, 255),
-            2,
-        )
-        for row in range(3):
-            for column in range(3):
-                value = self.board_state[row][column]
-                symbol = '.' if value == 0 else ('O' if value == 1 else 'X')
-                cv2.putText(
-                    frame,
-                    f'[{symbol}]',
-                    (start_x + column * 50, start_y + 30 + row * 30),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.8,
-                    (0, 255, 255),
-                    2,
+        A late-stage Action failure does not immediately stop the game.
+        If the expected robot piece was already seen by vision while the action
+        was running, that physical placement is accepted and the game continues.
+        Otherwise the referee waits for a later camera confirmation.
+        """
+        try:
+            result = future.result().result
+        except Exception as error:
+            self.get_logger().warning(
+                f"PlacePiece result 처리 실패: {error} "
+                "- 카메라로 실제 배치 여부를 확인합니다."
+            )
+
+            if self.pending_cell is None:
+                self.game_state = ERROR
+                self.get_logger().error(
+                    "확인할 pending_cell이 없어 복구할 수 없습니다."
+                )
+                return
+
+            if (
+                self.robot_move_seen_during_action
+                and self.observed_robot_board is not None
+            ):
+                self.get_logger().info(
+                    "Action result 오류가 있었지만 "
+                    "이미 Vision으로 로봇 배치를 확인했습니다."
+                )
+                self.finish_robot_confirmation(
+                    self.observed_robot_board
+                )
+            else:
+                self.game_state = WAIT_FOR_ROBOT_CONFIRMATION
+                self.get_logger().warning(
+                    "로봇 말의 카메라 확인을 기다립니다."
                 )
 
+            return
+
+        if self.pending_cell is None:
+            self.game_state = ERROR
+            self.get_logger().error(
+                "확인할 pending_cell이 없습니다."
+            )
+            return
+
+        if result.success:
+            self.get_logger().info(
+                f"{result.message} - 최종 배치 상태를 확인합니다."
+            )
+        else:
+            self.get_logger().warning(
+                f"{result.message} - Action은 실패했지만 "
+                "Vision으로 실제 배치 여부를 확인합니다."
+            )
+
+        # board_detector may already have published the robot placement while
+        # the Action was still running. Since it publishes only changed stable
+        # states, waiting for another identical message could deadlock.
+        if (
+            self.robot_move_seen_during_action
+            and self.observed_robot_board is not None
+        ):
+            self.get_logger().info(
+                "Action 실행 중 확인된 Vision 결과로 "
+                "로봇 수를 확정합니다."
+            )
+            self.finish_robot_confirmation(
+                self.observed_robot_board
+            )
+            return
+
+        self.game_state = WAIT_FOR_ROBOT_CONFIRMATION
+        self.get_logger().warning(
+            "아직 로봇 말이 확인되지 않았습니다. "
+            "카메라 확인을 기다립니다."
+        )
+
     def destroy_node(self):
-        cv2.destroyAllWindows()
         self.place_piece_client.destroy()
         super().destroy_node()
 
@@ -317,11 +438,17 @@ class TicTacToeRefereeNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = TicTacToeRefereeNode()
+
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass
     finally:
         node.destroy_node()
+
         if rclpy.ok():
             rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()

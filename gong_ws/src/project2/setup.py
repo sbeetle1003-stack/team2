@@ -63,6 +63,9 @@ setup(
             'tic_tac_toe_manual_test = project2.tic_tac_toe_manual_test:main',
             'digital_twin_bridge = project2.digital_twin_bridge:main',
             'digital_twin_grab_test = project2.digital_twin_grab_test:main',
+            'gripper_camera_pub = project2.gripper_camera_pub:main',
+            'board_frame_publisher = project2.board_frame_publisher:main',
+            'board_cell_test = project2.board_cell_test:main',
         ],
     },
 )
