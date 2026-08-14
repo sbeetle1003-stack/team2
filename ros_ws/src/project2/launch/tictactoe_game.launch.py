@@ -19,6 +19,7 @@ def generate_launch_description():
     start_board_detector = LaunchConfiguration('start_board_detector')
     start_pick_place = LaunchConfiguration('start_pick_place')
     start_referee = LaunchConfiguration('start_referee')
+    difficulty = LaunchConfiguration('difficulty')
 
     declared_arguments = [
         DeclareLaunchArgument(
@@ -52,6 +53,11 @@ def generate_launch_description():
             default_value='true',
             description='Start the tic-tac-toe referee and AI client.',
         ),
+        DeclareLaunchArgument(
+            'difficulty',
+            default_value='hard',
+            description='Robot AI difficulty: easy | normal | hard.',
+        ),
     ]
 
     pick_place_controller = Node(
@@ -76,7 +82,7 @@ def generate_launch_description():
         name='tic_tac_toe_referee',
         output='screen',
         emulate_tty=True,
-        parameters=[{'use_sim_time': False}],
+        parameters=[{'use_sim_time': False, 'difficulty': difficulty}],
         condition=IfCondition(start_referee),
     )
 

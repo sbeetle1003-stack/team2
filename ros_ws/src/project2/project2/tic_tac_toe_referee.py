@@ -20,7 +20,7 @@ from std_msgs.msg import Int8MultiArray
 
 from project2.tic_tac_toe_ai import (
     check_winner,
-    choose_best_move,
+    choose_move,
     is_draw,
 )
 
@@ -42,6 +42,8 @@ class TicTacToeRefereeNode(Node):
 
     def __init__(self):
         super().__init__("tic_tac_toe_referee")
+
+        self.declare_parameter('difficulty', 'hard')  # easy | normal | hard
 
         self.board_state = [[EMPTY, EMPTY, EMPTY] for _ in range(3)]
         self.previous_board_state = None
@@ -277,7 +279,8 @@ class TicTacToeRefereeNode(Node):
 
     def request_robot_turn(self):
         """Ask the AI for the next move and send it to the action server."""
-        move = choose_best_move(self.board_state)
+        difficulty = self.get_parameter('difficulty').value
+        move = choose_move(self.board_state, difficulty)
 
         if move is None:
             self.game_state = GAME_OVER

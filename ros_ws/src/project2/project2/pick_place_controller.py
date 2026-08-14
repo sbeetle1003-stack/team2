@@ -17,6 +17,7 @@ from rclpy.action import (
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
+from std_srvs.srv import Trigger
 from trajectory_msgs.msg import JointTrajectoryPoint
 
 
@@ -74,6 +75,10 @@ class PickPlaceController(Node):
             execute_callback=self.execute_callback,
             goal_callback=self.goal_callback,
             cancel_callback=self.cancel_callback,
+            callback_group=callback_group,
+        )
+        self.reset_pieces_service = self.create_service(
+            Trigger, 'reset_pieces', self._reset_pieces_callback,
             callback_group=callback_group,
         )
 
@@ -134,6 +139,17 @@ class PickPlaceController(Node):
 
     def cancel_callback(self, _goal_handle):
         return CancelResponse.ACCEPT
+
+    def _reset_pieces_callback(self, request, response):
+        with self.busy_lock:
+            if self.busy:
+                response.success = False
+                response.message = 'Pick & Place 실행 중이라 초기화할 수 없습니다.'
+                return response
+            self.next_piece_index = 0
+        response.success = True
+        response.message = '로봇 피스 공급 인덱스를 초기화했습니다.'
+        return response
 
     def _feedback(self, goal_handle, stage, progress):
         feedback = PlacePiece.Feedback()
