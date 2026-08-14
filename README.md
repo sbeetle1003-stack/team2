@@ -8,6 +8,7 @@
 > [!IMPORTANT]
 > 현재 통합 작업 파일은 `feature/integration` 브랜치에 있습니다.
 > 최신 통합 버전은 해당 브랜치를 확인해 주세요.
+> https://github.com/sbeetle1003-stack/team2/tree/feature/integration
 <br>
 
 ## 🔗 Project Resources
