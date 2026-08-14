@@ -233,4 +233,4 @@ ros2 run project2 tic_tac_toe_referee
 | 기록 관절 자세 기반 Pick & Place | ✅ 완료 |
 | 실물 OpenManipulator-X 게임 완료 | ✅ 확인 |
 | 통합 launch 실행 | ✅ 완료 |
-| Gazebo Digital Twin | ⏸️ 최종 범위에서 제외 |
+| Gazebo Digital Twin | ⏸️ 일부 기능 완료 |
